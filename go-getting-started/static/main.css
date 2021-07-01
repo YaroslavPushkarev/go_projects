@@ -1,0 +1,54 @@
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	font-family: sans-serif;
+}
+
+body {
+	background: #0f2027;
+	background: linear-gradient(to right,#2c5364, #203a43, #0f2027);
+	font-size: 15px;
+	color: cornsilk;
+}
+
+ul{
+	list-style: none;
+}
+
+.container{
+	width: 100%;
+	max-width: 1170px;
+	margin: 0 auto;
+	padding: 50px 15px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	text-align: center;
+}
+
+.search-input {
+	font-size: 16px;
+	font-size: max(16px, 1em);
+	font-family: inherit;
+	padding: 0.5em 0.5em;
+	background-color: #fff;
+	
+	border-radius: 4px;
+  }
+
+  input[type=submit]{
+	display: inline-block;
+	background: #ca3e47;
+	border-radius: 4px;
+	color: inherit;
+	font: inherit;
+	border: 0;
+	outline: 0;
+	padding: 10px 15px;
+	cursor: pointer;	
+  }
+
+  h2{
+	  margin: 15px 0 ;	
+  }
