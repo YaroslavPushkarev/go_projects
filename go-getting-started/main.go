@@ -1,12 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"encoding/json"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
-	"os"
+	// "os"
 	"sort"
 	"strings"
 	"text/template"
@@ -67,30 +68,36 @@ func fun(w http.ResponseWriter, r *http.Request) {
 }
 
 func search(w http.ResponseWriter, r *http.Request) {
+	var arr []string
+
 	value := r.FormValue("q")
 
 	for _, item := range jokes {
-		contain := strings.Contains(item.Title, value)
-		if contain == true {
-			tpl.ExecuteTemplate(w, "search.html", item)
-			return
-		}
+				contain := strings.Contains(item.Title, value)
+				if contain == true {
+					arr = append(arr, item.Title)
+					return
+					}			
 	}
+	
+				fmt.Println("s")
 }
+	//tpl.ExecuteTemplate(w, "search.html", item)
 
 func main() {
 
 	content, _ := ioutil.ReadFile("reddit_jokes.json")
 	json.Unmarshal(content, &jokes)
 
-	port := os.Getenv("PORT")
+	//port := os.Getenv("PORT")
 
-	if port == "" {
-		log.Fatal(":8000")
-	}
+	//if port == "" {
+    //		log.Fatal(":8000")
+	//}
 
 	r := pat.New()
 
+	http.Handle("/", r)
 	r.Get("/", http.HandlerFunc(index))
 	r.Get("/jokes", http.HandlerFunc(getJokes))
 	r.Get("/jokes/:id", http.HandlerFunc(getJoke))
@@ -99,5 +106,9 @@ func main() {
 	r.Get("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("assets"))))
 	r.Get("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	r.Post("/search", http.HandlerFunc(search))
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	//log.Fatal(http.ListenAndServe(":"+port, r))
+	err := http.ListenAndServe(":8000", nil)
+	 if err != nil {
+	 	log.Fatal("ListenAndServe: ", err)
+	 }
 }
