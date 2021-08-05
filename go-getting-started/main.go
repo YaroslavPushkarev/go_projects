@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -12,8 +11,8 @@ import (
 	"strings"
 	"text/template"
 	"time"
-
 	"github.com/bmizerany/pat"
+
 
 	// "github.com/gin-gonic/gin"
 
@@ -67,22 +66,20 @@ func fun(w http.ResponseWriter, r *http.Request) {
 	tpl.ExecuteTemplate(w, "fun.html", jokes)
 }
 
+
 func search(w http.ResponseWriter, r *http.Request) {
 	var arr []string
 
 	value := r.FormValue("q")
 
 	for _, item := range jokes {
-				contain := strings.Contains(item.Title, value)
-				if contain == true {
-					arr = append(arr, item.Title)
-					return
-					}			
+		contain := strings.Contains(item.Title, value)
+			if contain == true {
+			arr = append(arr, item.Title)		
+		}			
 	}
-	
-				fmt.Println("s")
+	tpl.ExecuteTemplate(w, "search.html", arr)
 }
-	//tpl.ExecuteTemplate(w, "search.html", item)
 
 func main() {
 

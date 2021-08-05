@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -7,10 +8,15 @@
     <title>search</title>
     <link type="text/css" rel="stylesheet" href="../static/main.css">
 </head>
+
 <body>
     <div class="container">
-        <h2>{{ .Title }}</h2>
-        <h3>{{ .Body }}</h3>
+        <ul>
+            {{ range . }}
+            <li><b>{{ . }}</b></li>
+            {{ end }}
+        </ul>
     </div>
 </body>
+
 </html>
