@@ -3,15 +3,14 @@ package main
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
-	"math/rand"
+	 "math/rand"
 	"net/http"
-	// "os"
+	"strconv" 	
 	"sort"
 	"strings"
 	"text/template"
 	"time"
-	"github.com/bmizerany/pat"
+	// "github.com/bmizerany/pat"
 
 
 	// "github.com/gin-gonic/gin"
@@ -38,33 +37,82 @@ func index(w http.ResponseWriter, r *http.Request) {
 }
 
 func getJokes(w http.ResponseWriter, r *http.Request) {
-	tpl.ExecuteTemplate(w, "index.html", jokes)
+    w.Header().Set("Content-Type", "application/json")
+    skip, err := strconv.Atoi(r.URL.Query().Get("skip"))
+    if err != nil || skip < 1 {
+        http.NotFound(w, r)
+        return
+    }
+    
+    limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+    if err != nil || limit < 1 {
+        http.NotFound(w, r)
+        return
+    }
+    
+    res := jokes[skip:limit+skip]
+
+	json.NewEncoder(w).Encode(res)
 }
 
 func getJoke(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get(":id")
+	w.Header().Set("Content-Type", "application/json")
+	id := r.URL.Query().Get("id")
+	
+	
 	for _, item := range jokes {
 		if item.ID == id {
-			tpl.ExecuteTemplate(w, "id.html", item)
-			return
+			json.NewEncoder(w).Encode(item)
 		}
 	}
 }
 
 func randomJokes(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	rand.Shuffle(len(jokes), func(i, j int) { jokes[i], jokes[j] = jokes[j], jokes[i] })
 
-	tpl.ExecuteTemplate(w, "random.html", jokes)
+	skip, err := strconv.Atoi(r.URL.Query().Get("skip"))
+    if err != nil || skip < 1 {
+        http.NotFound(w, r)
+        return
+    }
+    
+    limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+    if err != nil || limit < 1 {
+        http.NotFound(w, r)
+        return
+    }
+    
+    res := jokes[skip:limit+skip]
+
+	json.NewEncoder(w).Encode(res)
 }
 
 func fun(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	sort.SliceStable(jokes, func(i, j int) bool {
 		return jokes[i].Score > jokes[j].Score
 	})
-	tpl.ExecuteTemplate(w, "fun.html", jokes)
-}
+
+	skip, err := strconv.Atoi(r.URL.Query().Get("skip"))
+    if err != nil || skip < 1 {
+        http.NotFound(w, r)
+        return
+    }
+    
+    limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+    if err != nil || limit < 1 {
+        http.NotFound(w, r)
+        return
+    }
+    
+    res := jokes[skip:limit+skip]
+
+	json.NewEncoder(w).Encode(res)
+ }
 
 
 func search(w http.ResponseWriter, r *http.Request) {
@@ -79,6 +127,7 @@ func search(w http.ResponseWriter, r *http.Request) {
 		}			
 	}
 	tpl.ExecuteTemplate(w, "search.html", arr)
+		
 }
 
 func main() {
@@ -86,26 +135,37 @@ func main() {
 	content, _ := ioutil.ReadFile("reddit_jokes.json")
 	json.Unmarshal(content, &jokes)
 
+	http.HandleFunc("/",index)
+	http.HandleFunc("/jokes", getJokes)
+	http.HandleFunc("/jokes/", getJoke)
+	http.HandleFunc("/jokes/random/", randomJokes)
+	http.HandleFunc("/jokes/funniest/", fun)
+	http.HandleFunc("/search", search)
+	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("assets"))))
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+
+    http.ListenAndServe(":8000", nil)
+
 	//port := os.Getenv("PORT")
 
 	//if port == "" {
     //		log.Fatal(":8000")
 	//}
 
-	r := pat.New()
+	// r := pat.New()
 
-	http.Handle("/", r)
-	r.Get("/", http.HandlerFunc(index))
-	r.Get("/jokes", http.HandlerFunc(getJokes))
-	r.Get("/jokes/:id", http.HandlerFunc(getJoke))
-	r.Get("/jokes/random/", http.HandlerFunc(randomJokes))
-	r.Get("/jokes/funniest/", http.HandlerFunc(fun))
-	r.Get("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("assets"))))
-	r.Get("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	r.Post("/search", http.HandlerFunc(search))
+	// http.Handle("/", r)
+	// r.Get("/", http.HandlerFunc(index))
+	// r.Get("/jokes", http.HandlerFunc(getJokes))
+	// r.Get("/jokes/random/", http.HandlerFunc(randomJokes))
+	// r.Get("/jokes/funniest/", http.HandlerFunc(fun))
+	// r.Get("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("assets"))))
+	// r.Get("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	// r.Post("/search", http.HandlerFunc(search))
 	//log.Fatal(http.ListenAndServe(":"+port, r))
-	err := http.ListenAndServe(":8000", nil)
-	 if err != nil {
-	 	log.Fatal("ListenAndServe: ", err)
-	 }
+	// err := http.ListenAndServe(":8000", nil)
+	//  if err != nil {
+	//  	log.Fatal("ListenAndServe: ", err)
+	//  }
 }
+
