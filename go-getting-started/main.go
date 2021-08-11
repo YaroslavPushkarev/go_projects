@@ -90,7 +90,7 @@ func randomJokes(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-func fun(w http.ResponseWriter, r *http.Request) {
+func funniest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	sort.SliceStable(jokes, func(i, j int) bool {
@@ -139,7 +139,7 @@ func main() {
 	http.HandleFunc("/jokes", getJokes)
 	http.HandleFunc("/jokes/", getJoke)
 	http.HandleFunc("/jokes/random/", randomJokes)
-	http.HandleFunc("/jokes/funniest/", fun)
+	http.HandleFunc("/jokes/funniest/", funniest)
 	http.HandleFunc("/search", search)
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("assets"))))
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
