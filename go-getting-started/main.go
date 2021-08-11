@@ -38,6 +38,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 
 func getJokes(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
+	
     skip, err := strconv.Atoi(r.URL.Query().Get("skip"))
     if err != nil || skip < 1 {
         http.NotFound(w, r)
