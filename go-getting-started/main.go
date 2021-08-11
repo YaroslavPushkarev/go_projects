@@ -116,9 +116,11 @@ func funniest(w http.ResponseWriter, r *http.Request) {
 
 
 func search(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	var arr []string
 
-	value := r.FormValue("q")
+	value := r.URL.Query().Get("input")
+   
 
 	for _, item := range jokes {
 		contain := strings.Contains(item.Title, value)
@@ -126,7 +128,8 @@ func search(w http.ResponseWriter, r *http.Request) {
 			arr = append(arr, item.Title)		
 		}			
 	}
-	tpl.ExecuteTemplate(w, "search.html", arr)
+	
+	json.NewEncoder(w).Encode(arr)
 		
 }
 
@@ -141,31 +144,7 @@ func main() {
 	http.HandleFunc("/jokes/random/", randomJokes)
 	http.HandleFunc("/jokes/funniest/", funniest)
 	http.HandleFunc("/search", search)
-	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("assets"))))
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
     http.ListenAndServe(":8000", nil)
-
-	//port := os.Getenv("PORT")
-
-	//if port == "" {
-    //		log.Fatal(":8000")
-	//}
-
-	// r := pat.New()
-
-	// http.Handle("/", r)
-	// r.Get("/", http.HandlerFunc(index))
-	// r.Get("/jokes", http.HandlerFunc(getJokes))
-	// r.Get("/jokes/random/", http.HandlerFunc(randomJokes))
-	// r.Get("/jokes/funniest/", http.HandlerFunc(fun))
-	// r.Get("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("assets"))))
-	// r.Get("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	// r.Post("/search", http.HandlerFunc(search))
-	//log.Fatal(http.ListenAndServe(":"+port, r))
-	// err := http.ListenAndServe(":8000", nil)
-	//  if err != nil {
-	//  	log.Fatal("ListenAndServe: ", err)
-	//  }
 }
 
