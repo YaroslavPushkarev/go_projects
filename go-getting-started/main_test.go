@@ -4,8 +4,8 @@ import "testing"
 
 func TestJokes(t *testing.T){
 		var tests = []struct {
-			input    int
-			expected int
+			input    
+			expected 
 		}{
 			{100000000000, 1},
 			{100000000000, 100000000000},
