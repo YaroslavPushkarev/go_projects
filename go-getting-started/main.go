@@ -10,11 +10,6 @@ import (
 	"strings"
 	"text/template"
 	"time"
-	// "github.com/bmizerany/pat"
-
-
-	// "github.com/gin-gonic/gin"
-
 	_ "github.com/heroku/x/hmetrics/onload"
 )
 
@@ -32,9 +27,30 @@ var tpl *template.Template
 func init() {
 	tpl = template.Must(template.ParseGlob("templates/*.html"))
 }
+
 func index(w http.ResponseWriter, r *http.Request) {
 	tpl.ExecuteTemplate(w, "index.html", nil)
 }
+
+// var skip int
+// var limit int
+
+// func parseSkipAndLimit(r *http.Request) (skip,limit int, error){	
+
+// 	skip, err = strconv.Atoi(r.URL.Query().Get("skip"))
+//     if err != nil || skip < 1 {
+// 		err = fmt.Errorf("err") 
+// 		return
+//     }
+
+// 	limit, err = strconv.Atoi(r.URL.Query().Get("limit"))
+//     if err != nil || limit < 1 {
+// 		err = fmt.Errorf("err") 
+// 		return
+// 	}
+
+// 	return 
+// }
 
 func getJokes(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
@@ -50,9 +66,9 @@ func getJokes(w http.ResponseWriter, r *http.Request) {
         http.NotFound(w, r)
         return
     }
-    
-    res := jokes[skip:limit+skip]
+	// parseSkipAndLimit(r)
 
+    res := jokes[skip:limit+skip]
 	json.NewEncoder(w).Encode(res)
 }
 
