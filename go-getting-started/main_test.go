@@ -8,7 +8,7 @@ import (
 
 
 
-func TestTokenProcessing(t *testing.T) {
+func TestJokes(t *testing.T) {
     rr := httptest.NewRecorder()
     r, err := http.NewRequest("GET", "http://golang.org/", nil)
     if err != nil {
