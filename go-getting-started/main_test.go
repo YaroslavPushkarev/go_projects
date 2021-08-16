@@ -13,15 +13,15 @@ import (
 func TestJokes(t *testing.T) {
     testCases := []struct  {
         skip string
-        limit int
+        
     }{
         {
             skip: "5",
-            limit: 20,
+         
         },
         {
             skip: "20",
-            limit: 40,
+        
         },
     }
 
@@ -30,7 +30,7 @@ func TestJokes(t *testing.T) {
     for _, tc := range testCases{
         t.Run(tc.skip, func(t *testing.T){
             record := httptest.NewRecorder()
-            request, _ := httptest.NewRequest("GET", fmt.Sprintf("/jokes?skip=%d", tc.skip), nil)
+            request, _ := http.NewRequest("GET", fmt.Sprintf("/jokes?skip=%d", tc.skip), nil)
             handler.ServeHTTP(record, request)
             assert.Equal(t, tc.want, record.Body.Bytes())
         })
