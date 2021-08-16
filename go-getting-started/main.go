@@ -56,17 +56,18 @@ func getJokes(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
 	
     skip, err := strconv.Atoi(r.URL.Query().Get("skip"))
-    if err != nil || skip < 1 {
-        http.NotFound(w, r)
+    if err != nil  {
+        http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
     
     limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
     if err != nil || limit < 1 {
-        http.NotFound(w, r)
+		http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
-	// parseSkipAndLimit(r)
+	
+	//	parseSkipAndLimit(r)
 
     res := jokes[skip:limit+skip]
 	json.NewEncoder(w).Encode(res)
