@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"encoding/json"
 	"io/ioutil"
 	 "math/rand"
@@ -53,24 +54,41 @@ func index(w http.ResponseWriter, r *http.Request) {
 // }
 
 func getJokes(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "application/json")
+    // w.Header().Set("Content-Type", "application/json")
+
 	
-    skip, err := strconv.Atoi(r.URL.Query().Get("skip"))
-    if err != nil  {
-        http.Error(w, err.Error(), http.StatusBadRequest)
-        return
-    }
-    
-    limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
-    if err != nil || limit < 1 {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-        return
-    }
+    s := r.URL.Query().Get("skip")
+	if s == "" {
+		http.Error(w, "missing value", http.StatusBadRequest)
+		return
+	}
+	
+	skip, err := strconv.Atoi(s)
+	if err != nil {
+		http.Error(w, "not a number: "+s, http.StatusBadRequest)
+		return
+	}
+	
+	// l := r.URL.Query().Get("limit")
+    // if err != nil  {
+	// 	    http.Error(w, err.Error(), http.StatusBadRequest)
+	// 	    return
+	// }
+
+	// 	limit, err := strconv.Atoi(l)
+	// 	if err != nil {
+	// 	http.Error(w, "not a number: "+l, http.StatusBadRequest)
+
+	//  	return
+	//  }
+	
+	fmt.Fprintln(w, skip)
+
 	
 	//	parseSkipAndLimit(r)
-
-    res := jokes[skip:limit+skip]
-	json.NewEncoder(w).Encode(res)
+    //  res := jokes[skip:limit+skip]
+	//  fmt.Println(skip)
+	// json.NewEncoder(w).Encode(res)
 }
 
 func getJoke(w http.ResponseWriter, r *http.Request) {

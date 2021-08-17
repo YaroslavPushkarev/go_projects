@@ -1,55 +1,44 @@
 package main
 
 import (
-    "fmt"
-    "net/http"
+	"net/http"
 	"net/http/httptest"
-    "testing"
-    "github.com/stretchr/testify/assert"
+	"testing"
+	"bytes"
+	"strconv"
+	"io/ioutil"
 )
 
+func TestJokes(t *testing.T){
+	req, err := http.NewRequest("GET", "localhost:8000/jokes?skip=5", nil)
+	if err != nil {
+		t.Fatalf("could not send GET request: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+
+	getJokes(rec, req)
+
+	res := rec.Result()
+
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %v", res.Status)
+	}
 
 
-func TestJokes(t *testing.T) {
-    testCases := []struct  {
-        skip string
-        
-    }{
-        {
-            skip: "5",
-         
-        },
-        {
-            skip: "20",
-        
-        },
-    }
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		t.Fatalf("could not response: %v", err)
+	}
 
-    handler := http.HandlerFunc(getJokes)
+	d, err := strconv.Atoi(string(bytes.TrimSpace(b)))
+	if err != nil {
+		t.Fatalf("expected an integer; got %s", b)
+	}
 
-    for _, tc := range testCases{
-        t.Run(tc.skip, func(t *testing.T){
-            record := httptest.NewRecorder()
-            request, _ := http.NewRequest("GET", fmt.Sprintf("/jokes?skip=%d", tc.skip), nil)
-            handler.ServeHTTP(record, request)
-            assert.Equal(t, tc.want, record.Body.Bytes())
-        })
-    }
-    // rr := httptest.NewRecorder()
-    // r, err := http.NewRequest("GET", "http://golang.org/", nil)
-    // if err != nil {
-    //     t.Fatal(err)
-    // }
-
-    // r.URL.Query().Add("skip", "5")
-	// r.URL.Query().Add("limit", "20")
-
-    // handler := http.HandlerFunc(getJokes)
-    // handler.ServeHTTP(rr, r)
-
-    // if code := rr.Code; code != http.StatusOK {
-    //     t.Fatalf("handler did not return correct status: want %v got %v",
-    //         http.StatusOK, code)
-    // }
-
+	if d != 5  {
+		t.Fatalf("expected double to be 5; got %v", d)
+	}
 }
