@@ -39,29 +39,29 @@ type Pagination struct {
 	Limit int
 }
 
-// var skip int
-// var limit int
+func parseSkipAndLimit(r *http.Request) (Pagination, error) {
 
-func parseSkipAndLimit(r *http.Request) (int, int, error) {
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
 	if err != nil || limit < 1 {
 		err = fmt.Errorf("err")
-		return 0, 0, err
+		return Pagination{Limit: 2}, err
 	}
 
 	skip, err := strconv.Atoi(r.URL.Query().Get("skip"))
 	if err != nil || skip < 1 {
 		err = fmt.Errorf("err")
-		return 0, 0, err
+		return Pagination{}, err
 	}
 
-	return limit, skip, nil
+	pagination := Pagination{Skip: skip, Limit: limit}
+
+	return pagination, nil
 }
 
 func getJokes(w http.ResponseWriter, r *http.Request) {
 	// w.Header().Set("Content-Type", "application/json")
 
-	skip, limit, err := parseSkipAndLimit(r)
+	pagination, err := parseSkipAndLimit(r)
 
 	// s := r.URL.Query().Get("skip")
 	// if s == "" {
@@ -90,7 +90,7 @@ func getJokes(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprintln(w, err)
 
-	res := jokes[skip : limit+skip]
+	res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]
 	//  fmt.Println(skip)
 	json.NewEncoder(w).Encode(res)
 }
