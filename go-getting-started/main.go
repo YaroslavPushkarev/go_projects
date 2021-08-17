@@ -1,16 +1,17 @@
 package main
 
 import (
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
-	 "math/rand"
+	"math/rand"
 	"net/http"
-	"strconv" 	
 	"sort"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
+
 	_ "github.com/heroku/x/hmetrics/onload"
 )
 
@@ -33,44 +34,49 @@ func index(w http.ResponseWriter, r *http.Request) {
 	tpl.ExecuteTemplate(w, "index.html", nil)
 }
 
+type Pagination struct {
+	Skip  int
+	Limit int
+}
+
 // var skip int
 // var limit int
 
-// func parseSkipAndLimit(r *http.Request) (skip,limit int, error){	
+func parseSkipAndLimit(r *http.Request) (int, int, error) {
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil || limit < 1 {
+		err = fmt.Errorf("err")
+		return 0, 0, err
+	}
 
-// 	skip, err = strconv.Atoi(r.URL.Query().Get("skip"))
-//     if err != nil || skip < 1 {
-// 		err = fmt.Errorf("err") 
-// 		return
-//     }
+	skip, err := strconv.Atoi(r.URL.Query().Get("skip"))
+	if err != nil || skip < 1 {
+		err = fmt.Errorf("err")
+		return 0, 0, err
+	}
 
-// 	limit, err = strconv.Atoi(r.URL.Query().Get("limit"))
-//     if err != nil || limit < 1 {
-// 		err = fmt.Errorf("err") 
-// 		return
-// 	}
-
-// 	return 
-// }
+	return limit, skip, nil
+}
 
 func getJokes(w http.ResponseWriter, r *http.Request) {
-    // w.Header().Set("Content-Type", "application/json")
+	// w.Header().Set("Content-Type", "application/json")
 
-	
-    s := r.URL.Query().Get("skip")
-	if s == "" {
-		http.Error(w, "missing value", http.StatusBadRequest)
-		return
-	}
-	
-	skip, err := strconv.Atoi(s)
-	if err != nil {
-		http.Error(w, "not a number: "+s, http.StatusBadRequest)
-		return
-	}
-	
+	skip, limit, err := parseSkipAndLimit(r)
+
+	// s := r.URL.Query().Get("skip")
+	// if s == "" {
+	// 	http.Error(w, "missing value", http.StatusBadRequest)
+	// 	return
+	// }
+
+	// skip, err := strconv.Atoi(s)
+	// if err != nil {
+	// 	http.Error(w, "not a number: "+s, http.StatusBadRequest)
+	// 	return
+	// }
+
 	// l := r.URL.Query().Get("limit")
-    // if err != nil  {
+	// if err != nil  {
 	// 	    http.Error(w, err.Error(), http.StatusBadRequest)
 	// 	    return
 	// }
@@ -79,23 +85,20 @@ func getJokes(w http.ResponseWriter, r *http.Request) {
 	// 	if err != nil {
 	// 	http.Error(w, "not a number: "+l, http.StatusBadRequest)
 
- 	// return
+	// return
 	// }
-	
-	fmt.Fprintln(w, skip)
 
-	
-	//	parseSkipAndLimit(r)
-    //  res := jokes[skip:limit+skip]
+	fmt.Fprintln(w, err)
+
+	res := jokes[skip : limit+skip]
 	//  fmt.Println(skip)
-	// json.NewEncoder(w).Encode(res)
+	json.NewEncoder(w).Encode(res)
 }
 
 func getJoke(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	id := r.URL.Query().Get("id")
-	
-	
+
 	for _, item := range jokes {
 		if item.ID == id {
 			json.NewEncoder(w).Encode(item)
@@ -110,18 +113,18 @@ func randomJokes(w http.ResponseWriter, r *http.Request) {
 	rand.Shuffle(len(jokes), func(i, j int) { jokes[i], jokes[j] = jokes[j], jokes[i] })
 
 	skip, err := strconv.Atoi(r.URL.Query().Get("skip"))
-    if err != nil || skip < 1 {
-        http.NotFound(w, r)
-        return
-    }
-    
-    limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
-    if err != nil || limit < 1 {
-        http.NotFound(w, r)
-        return
-    }
-    
-    res := jokes[skip:limit+skip]
+	if err != nil || skip < 1 {
+		http.NotFound(w, r)
+		return
+	}
+
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil || limit < 1 {
+		http.NotFound(w, r)
+		return
+	}
+
+	res := jokes[skip : limit+skip]
 
 	json.NewEncoder(w).Encode(res)
 }
@@ -134,38 +137,36 @@ func funniest(w http.ResponseWriter, r *http.Request) {
 	})
 
 	skip, err := strconv.Atoi(r.URL.Query().Get("skip"))
-    if err != nil || skip < 1 {
-        http.NotFound(w, r)
-        return
-    }
-    
-    limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
-    if err != nil || limit < 1 {
-        http.NotFound(w, r)
-        return
-    }
-    
-    res := jokes[skip:limit+skip]
+	if err != nil || skip < 1 {
+		http.NotFound(w, r)
+		return
+	}
+
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil || limit < 1 {
+		http.NotFound(w, r)
+		return
+	}
+
+	res := jokes[skip : limit+skip]
 
 	json.NewEncoder(w).Encode(res)
- }
-
+}
 
 func search(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var arr []string
 
 	value := r.URL.Query().Get("input")
-   
 
 	for _, item := range jokes {
 		if strings.Contains(item.Title, value) {
-			arr = append(arr, item.Title)		
-		}			
+			arr = append(arr, item.Title)
+		}
 	}
-	
+
 	json.NewEncoder(w).Encode(arr)
-		
+
 }
 
 func main() {
@@ -173,13 +174,12 @@ func main() {
 	content, _ := ioutil.ReadFile("reddit_jokes.json")
 	json.Unmarshal(content, &jokes)
 
-	http.HandleFunc("/",index)
+	http.HandleFunc("/", index)
 	http.HandleFunc("/jokes", getJokes)
 	http.HandleFunc("/jokes/", getJoke)
 	http.HandleFunc("/jokes/random/", randomJokes)
 	http.HandleFunc("/jokes/funniest/", funniest)
 	http.HandleFunc("/search", search)
 
-    http.ListenAndServe(":8000", nil)
+	http.ListenAndServe(":8000", nil)
 }
-
