@@ -39,6 +39,15 @@ func TestJokes(t *testing.T){
 	}
 
 	if d != 5  {
-		t.Fatalf("expected double to be 5; got %v", d)
+		t.Fatalf("expected 5; got %v", d)
 	}
 }
+
+
+Скрам-репорт
+Вчера: 
+Изменил код для тестирования и запушил github.
+Сегодня планирую:
+Работать на тестированием. 
+Блокеры:
+Нет.
