@@ -75,12 +75,12 @@ func getJokes(w http.ResponseWriter, r *http.Request) {
 	// 	    return
 	// }
 
-	// 	limit, err := strconv.Atoi(l)
+	// limit, err := strconv.Atoi(l)
 	// 	if err != nil {
 	// 	http.Error(w, "not a number: "+l, http.StatusBadRequest)
 
-	//  	return
-	//  }
+ 	// return
+	// }
 	
 	fmt.Fprintln(w, skip)
 
