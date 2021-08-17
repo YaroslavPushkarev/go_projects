@@ -159,8 +159,7 @@ func search(w http.ResponseWriter, r *http.Request) {
    
 
 	for _, item := range jokes {
-		contain := strings.Contains(item.Title, value)
-			if contain == true {
+		if strings.Contains(item.Title, value) {
 			arr = append(arr, item.Title)		
 		}			
 	}
