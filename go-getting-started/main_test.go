@@ -10,35 +10,45 @@ import (
 )
 
 func TestJokes(t *testing.T){
-	req, err := http.NewRequest("GET", "localhost:8000/jokes?skip=5", nil)
-	if err != nil {
-		t.Fatalf("could not send GET request: %v", err)
+	tt := []struct {
+		name string
+		value string
+		status int
+
+	}{
+		{name: "get value", value:"5", status: http.StatusOK},
 	}
 
-	rec := httptest.NewRecorder()
+	for _, tc := range tt {
+		req, err := http.NewRequest("GET", "localhost:8000/jokes?skip="+tc.value, nil)
+		if err != nil {
+			t.Fatalf("could not send GET request: %v", err)
+		}
 
-	getJokes(rec, req)
+		rec := httptest.NewRecorder()
 
-	res := rec.Result()
+		getJokes(rec, req)
 
-	defer res.Body.Close()
+		res := rec.Result()		
 
-	if res.StatusCode != http.StatusOK {
-		t.Errorf("expected status OK; got %v", res.Status)
-	}
+		defer res.Body.Close()
 
+		if res.StatusCode != http.StatusOK {
+			t.Errorf("expected status OK; got %v", res.Status)
+		}
 
-	b, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		t.Fatalf("could not response: %v", err)
-	}
+		b, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			t.Fatalf("could not response: %v", err)
+		}
 
-	d, err := strconv.Atoi(string(bytes.TrimSpace(b)))
-	if err != nil {
-		t.Fatalf("expected an integer; got %s", b)
-	}
+		d, err := strconv.Atoi(string(bytes.TrimSpace(b)))
+		if err != nil {
+			t.Fatalf("expected an integer; got %s", b)
+		}
 
-	if d != 5  {
-		t.Fatalf("expected 5; got %v", d)
+		if d != 5  {
+			t.Fatalf("expected 5; got %v", d)
+		}
 	}
 }
