@@ -91,7 +91,6 @@ func getJokes(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, err)
 
 	res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]
-	//  fmt.Println(skip)
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -111,20 +110,9 @@ func randomJokes(w http.ResponseWriter, r *http.Request) {
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	rand.Shuffle(len(jokes), func(i, j int) { jokes[i], jokes[j] = jokes[j], jokes[i] })
-
-	skip, err := strconv.Atoi(r.URL.Query().Get("skip"))
-	if err != nil || skip < 1 {
-		http.NotFound(w, r)
-		return
-	}
-
-	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
-	if err != nil || limit < 1 {
-		http.NotFound(w, r)
-		return
-	}
-
-	res := jokes[skip : limit+skip]
+	pagination, err := parseSkipAndLimit(r)
+	fmt.Fprintln(w, err)
+	res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]
 
 	json.NewEncoder(w).Encode(res)
 }
@@ -136,19 +124,9 @@ func funniest(w http.ResponseWriter, r *http.Request) {
 		return jokes[i].Score > jokes[j].Score
 	})
 
-	skip, err := strconv.Atoi(r.URL.Query().Get("skip"))
-	if err != nil || skip < 1 {
-		http.NotFound(w, r)
-		return
-	}
-
-	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
-	if err != nil || limit < 1 {
-		http.NotFound(w, r)
-		return
-	}
-
-	res := jokes[skip : limit+skip]
+	pagination, err := parseSkipAndLimit(r)
+	fmt.Fprintln(w, err)
+	res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]
 
 	json.NewEncoder(w).Encode(res)
 }
