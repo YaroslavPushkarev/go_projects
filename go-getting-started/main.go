@@ -88,7 +88,11 @@ func getJokes(w http.ResponseWriter, r *http.Request) {
 	// return
 	// }
 
-	fmt.Fprintln(w, err)
+	if pagination.Skip <= 0 {
+		fmt.Println(err)
+
+	}
+
 	res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]
 	json.NewEncoder(w).Encode(res)
 }
