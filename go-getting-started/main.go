@@ -11,8 +11,6 @@ import (
 	"strings"
 	"text/template"
 	"time"
-
-	_ "github.com/heroku/x/hmetrics/onload"
 )
 
 type Joke struct {
@@ -23,6 +21,8 @@ type Joke struct {
 }
 
 var jokes []Joke
+
+type Jokes []Joke
 
 var tpl *template.Template
 
