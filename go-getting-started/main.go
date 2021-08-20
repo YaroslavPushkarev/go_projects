@@ -59,7 +59,7 @@ func parseSkipAndLimit(r *http.Request) (Pagination, error) {
 }
 
 func getJokes(w http.ResponseWriter, r *http.Request) {
-	// w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 
 	pagination, err := parseSkipAndLimit(r)
 
@@ -89,7 +89,6 @@ func getJokes(w http.ResponseWriter, r *http.Request) {
 	// }
 
 	fmt.Fprintln(w, err)
-
 	res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]
 	json.NewEncoder(w).Encode(res)
 }
