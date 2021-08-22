@@ -13,17 +13,6 @@ import (
 	"time"
 )
 
-type Joke struct {
-	ID    string `json:"id"`
-	Title string `json:"title"`
-	Score int    `json:"score"`
-	Body  string `json:"body"`
-}
-
-var jokes []Joke
-
-type Jokes []Joke
-
 var tpl *template.Template
 
 func init() {
@@ -57,6 +46,15 @@ func parseSkipAndLimit(r *http.Request) (Pagination, error) {
 
 	return pagination, nil
 }
+
+type Joke struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+	Score int    `json:"score"`
+	Body  string `json:"body"`
+}
+
+var jokes []Joke
 
 func getJokes(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -97,6 +95,7 @@ func getJokes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]
+	// res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]
 	json.NewEncoder(w).Encode(res)
 }
 
