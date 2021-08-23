@@ -47,7 +47,7 @@ type Joke struct {
 	ID    string `json:"id"`
 	Title string `json:"title"`
 	Score int    `json:"score"`
-	Body  string `json:"body"`
+	// Body  string `json:"body"`
 }
 
 type Jokes []Joke
@@ -61,13 +61,18 @@ func (p jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	jokes := *p.jokes
 	pagination, err := parseSkipAndLimit(r)
+	if err != nil {
+		fmt.Fprintln(w, err)
+	}
 
 	if pagination.Skip <= 0 && pagination.Limit <= 0 {
-		fmt.Println(err)
+		res := jokes[1:5]
+		json.NewEncoder(w).Encode(res)
 	}
 
 	if pagination.Skip > len(jokes) && pagination.Limit > len(jokes) {
-		fmt.Println(err)
+		res := jokes[1:5]
+		json.NewEncoder(w).Encode(res)
 	}
 
 	res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]

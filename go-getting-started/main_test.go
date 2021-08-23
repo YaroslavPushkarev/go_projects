@@ -32,7 +32,7 @@ func TestJokesHandler(t *testing.T) {
 					Score: 10,
 				},
 			},
-			want:       `[{"id":"1", title":"Foo","score":10}]`,
+			want:       `[{"id":"1", "title":"Foo","score":10}]`,
 			statusCode: http.StatusOK,
 		},
 		{
@@ -46,7 +46,7 @@ func TestJokesHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(tc.method, "/jokes?skip=1&limit=2", nil)
+			request := httptest.NewRequest(tc.method, "/jokes", nil)
 			responseRecorder := httptest.NewRecorder()
 
 			jokesHandler{tc.input}.ServeHTTP(responseRecorder, request)
@@ -60,7 +60,9 @@ func TestJokesHandler(t *testing.T) {
 			}
 		})
 	}
-} // package main
+}
+
+// package main
 
 // import (
 // 	"bytes"
