@@ -24,6 +24,9 @@ type Pagination struct {
 	Limit int
 }
 
+const maxLimit = 5
+const minSkip = 1
+
 func parseSkipAndLimit(r *http.Request) (Pagination, error) {
 
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
@@ -38,8 +41,15 @@ func parseSkipAndLimit(r *http.Request) (Pagination, error) {
 		return Pagination{}, err
 	}
 
-	pagination := Pagination{Skip: skip, Limit: limit}
+	if limit > maxLimit {
+		limit = maxLimit
+	}
 
+	if skip < minSkip {
+		skip = minSkip
+	}
+
+	pagination := Pagination{Skip: skip, Limit: limit}
 	return pagination, nil
 }
 
@@ -50,30 +60,41 @@ type Joke struct {
 	// Body  string `json:"body"`
 }
 
-type Jokes []Joke
-
 type jokesHandler struct {
-	jokes *Jokes
+	jokes []Joke
 }
 
 func (p jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	if len(p.jokes) == 0 {
+		w.WriteHeader(204)
+		json.NewEncoder(w).Encode(p.jokes)
+		return
+	}
+	w.WriteHeader(204)
 
-	jokes := *p.jokes
+	if len(p.jokes) == 1 {
+		json.NewEncoder(w).Encode(p.jokes)
+		return
+	}
+
+	jokes := p.jokes
+
 	pagination, err := parseSkipAndLimit(r)
+
 	if err != nil {
 		fmt.Fprintln(w, err)
 	}
 
-	if pagination.Skip <= 0 && pagination.Limit <= 0 {
-		res := jokes[1:5]
-		json.NewEncoder(w).Encode(res)
-	}
+	// if pagination.Skip <= 0 && pagination.Limit <= 0 {
+	// 	res := jokes[1:5]
+	// 	json.NewEncoder(w).Encode(res)
+	// }
 
-	if pagination.Skip > len(jokes) && pagination.Limit > len(jokes) {
-		res := jokes[1:5]
-		json.NewEncoder(w).Encode(res)
-	}
+	// if pagination.Skip > len(jokes) || pagination.Limit > len(jokes) {
+	// 	res := jokes[1:5]
+	// 	json.NewEncoder(w).Encode(res)
+	// }
 
 	res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]
 
@@ -135,39 +156,39 @@ func (p jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	// content, _ := ioutil.ReadFile("reddit_jokes.json")
-	jokes := Jokes{
-		Joke{
+	jokes := []Joke{
+		{
 			ID:    "1",
 			Title: "Why women need legs?",
 			Score: 12,
 		},
-		Joke{
+		{
 			ID:    "2",
 			Title: "I recently went to America....",
 			Score: 11,
 		},
-		Joke{
+		{
 			ID:    "3",
 			Title: "I recently went to America....",
 			Score: 10,
 		},
-		Joke{
-			ID:    "5",
+		{
+			ID:    "4",
 			Title: "I recently went to America....",
 			Score: 4,
 		},
-		Joke{
-			ID:    "6",
+		{
+			ID:    "5",
 			Title: "I recently went to America....",
 			Score: 16,
 		},
-		Joke{
-			ID:    "7",
+		{
+			ID:    "6",
 			Title: "I recently went to America....",
 			Score: 34,
 		},
-		Joke{
-			ID:    "8",
+		{
+			ID:    "7",
 			Title: "I recently went to America....",
 			Score: 5,
 		},
@@ -175,7 +196,7 @@ func main() {
 	// json.Unmarshal(content, &jokes)
 
 	mux := http.NewServeMux()
-	mux.Handle("/jokes", jokesHandler{&jokes})
+	mux.Handle("/jokes", jokesHandler{jokes})
 	log.Fatal(http.ListenAndServe(":8080", mux))
 	// http.HandleFunc("/", index)
 	// http.HandlerFunc("/jokes", pizzasHandler{&data})

@@ -11,34 +11,34 @@ func TestJokesHandler(t *testing.T) {
 	tt := []struct {
 		name       string
 		method     string
-		input      *Jokes
+		input      []Joke
 		want       string
 		statusCode int
 	}{
 		{
 			name:       "without jokes",
 			method:     http.MethodGet,
-			input:      &Jokes{},
-			want:       "Error: No jokes found",
-			statusCode: http.StatusNotFound,
+			input:      []Joke{},
+			want:       "[]",
+			statusCode: http.StatusNoContent,
 		},
 		{
 			name:   "with jokes",
 			method: http.MethodGet,
-			input: &Jokes{
-				Joke{
+			input: []Joke{
+				{
 					ID:    "1",
 					Title: "Foo",
 					Score: 10,
 				},
 			},
-			want:       `[{"id":"1", "title":"Foo","score":10}]`,
+			want:       `[{"id":"1","title":"Foo","score":10}]`,
 			statusCode: http.StatusOK,
 		},
 		{
 			name:       "with bad method",
 			method:     http.MethodPost,
-			input:      &Jokes{},
+			input:      []Joke{},
 			want:       "Method not allowed",
 			statusCode: http.StatusMethodNotAllowed,
 		},
@@ -46,7 +46,7 @@ func TestJokesHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			request := httptest.NewRequest(tc.method, "/jokes", nil)
+			request := httptest.NewRequest(tc.method, "/jokes?skip=1&limit=3", nil)
 			responseRecorder := httptest.NewRecorder()
 
 			jokesHandler{tc.input}.ServeHTTP(responseRecorder, request)
