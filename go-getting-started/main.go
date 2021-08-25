@@ -66,12 +66,13 @@ type jokesHandler struct {
 
 func (p jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	if r.Method == http.MethodPost {
-		w.WriteHeader(405)
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	if len(p.jokes) == 0 {
-		w.WriteHeader(204)
+		w.WriteHeader(http.StatusNoContent)
 		json.NewEncoder(w).Encode(p.jokes)
 		return
 	}
