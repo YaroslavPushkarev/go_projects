@@ -66,18 +66,20 @@ type jokesHandler struct {
 
 func (p jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	if r.Method == http.MethodPost {
+		w.WriteHeader(405)
+		return
+	}
 	if len(p.jokes) == 0 {
 		w.WriteHeader(204)
 		json.NewEncoder(w).Encode(p.jokes)
 		return
 	}
-	w.WriteHeader(204)
 
 	if len(p.jokes) == 1 {
 		json.NewEncoder(w).Encode(p.jokes)
 		return
 	}
-
 	jokes := p.jokes
 
 	pagination, err := parseSkipAndLimit(r)
