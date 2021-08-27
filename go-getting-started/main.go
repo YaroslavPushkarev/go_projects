@@ -7,26 +7,14 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"text/template"
 )
-
-var tpl *template.Template
-
-func init() {
-	tpl = template.Must(template.ParseGlob("templates/*.html"))
-}
-
-func index(w http.ResponseWriter, r *http.Request) {
-	tpl.ExecuteTemplate(w, "index.html", nil)
-}
 
 type Pagination struct {
 	Skip  int
 	Limit int
 }
 
-const maxLimit = 5
-const minSkip = 1
+const maxLimit = 20
 
 func parseSkipAndLimit(r *http.Request) (Pagination, error) {
 
@@ -44,10 +32,6 @@ func parseSkipAndLimit(r *http.Request) (Pagination, error) {
 
 	if limit > maxLimit {
 		limit = maxLimit
-	}
-
-	if skip < minSkip {
-		skip = minSkip
 	}
 
 	pagination := Pagination{Skip: skip, Limit: limit}
