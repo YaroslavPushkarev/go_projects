@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -71,6 +72,7 @@ func (p jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+
 	if len(p.jokes) == 0 {
 		w.WriteHeader(http.StatusNoContent)
 		json.NewEncoder(w).Encode(p.jokes)
@@ -89,19 +91,10 @@ func (p jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, err)
 	}
 
-	// if pagination.Skip <= 0 && pagination.Limit <= 0 {
-	// 	res := jokes[1:5]
-	// 	json.NewEncoder(w).Encode(res)
-	// }
-
-	// if pagination.Skip > len(jokes) || pagination.Limit > len(jokes) {
-	// 	res := jokes[1:5]
-	// 	json.NewEncoder(w).Encode(res)
-	// }
-
 	res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]
 
 	json.NewEncoder(w).Encode(res)
+
 }
 
 // func getJoke(w http.ResponseWriter, r *http.Request) {
@@ -158,45 +151,9 @@ func (p jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // }
 
 func main() {
-	// content, _ := ioutil.ReadFile("reddit_jokes.json")
-	jokes := []Joke{
-		{
-			ID:    "1",
-			Title: "Why women need legs?",
-			Score: 12,
-		},
-		{
-			ID:    "2",
-			Title: "I recently went to America....",
-			Score: 11,
-		},
-		{
-			ID:    "3",
-			Title: "I recently went to America....",
-			Score: 10,
-		},
-		{
-			ID:    "4",
-			Title: "I recently went to America....",
-			Score: 4,
-		},
-		{
-			ID:    "5",
-			Title: "I recently went to America....",
-			Score: 16,
-		},
-		{
-			ID:    "6",
-			Title: "I recently went to America....",
-			Score: 34,
-		},
-		{
-			ID:    "7",
-			Title: "I recently went to America....",
-			Score: 5,
-		},
-	}
-	// json.Unmarshal(content, &jokes)
+	content, _ := ioutil.ReadFile("reddit_jokes.json")
+	jokes := []Joke{}
+	json.Unmarshal(content, &jokes)
 
 	mux := http.NewServeMux()
 	mux.Handle("/jokes", jokesHandler{jokes})
