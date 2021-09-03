@@ -13,40 +13,38 @@ type Pagination struct {
 	Skip  int
 	Limit int
 }
+type Joke struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+	Score int    `json:"score"`
+	Body  string `json:"body"`
+}
 
-const maxLimit = 20
+type jokesHandler struct {
+	jokes []Joke
+}
 
-func parseSkipAndLimit(r *http.Request) (Pagination, error) {
+func (j jokesHandler) parseSkipAndLimit(r *http.Request) (Pagination, error) {
+	leng := len(j.jokes)
 
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
-	if err != nil || limit < 1 {
+	if err != nil {
 		err = fmt.Errorf("err")
 		return Pagination{}, err
 	}
 
 	skip, err := strconv.Atoi(r.URL.Query().Get("skip"))
-	if err != nil || skip < 1 {
+	if err != nil {
 		err = fmt.Errorf("err")
 		return Pagination{}, err
 	}
 
-	if limit > maxLimit {
-		limit = maxLimit
+	if skip > leng {
+		skip = leng - 1
 	}
 
 	pagination := Pagination{Skip: skip, Limit: limit}
 	return pagination, nil
-}
-
-type Joke struct {
-	ID    string `json:"id"`
-	Title string `json:"title"`
-	Score int    `json:"score"`
-	// Body  string `json:"body"`
-}
-
-type jokesHandler struct {
-	jokes []Joke
 }
 
 func (p jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -67,9 +65,10 @@ func (p jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(p.jokes)
 		return
 	}
+
 	jokes := p.jokes
 
-	pagination, err := parseSkipAndLimit(r)
+	pagination, err := p.parseSkipAndLimit(r)
 
 	if err != nil {
 		fmt.Fprintln(w, err)

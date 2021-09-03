@@ -18,3 +18,5 @@ go 1.12
 // 	gopkg.in/yaml.v2 v2.4.0 // indirect
 // 	gorm.io/gorm v1.21.12 // indirect
 // )
+
+require github.com/stretchr/testify v1.7.0 // indirect
