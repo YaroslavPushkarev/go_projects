@@ -26,20 +26,20 @@ type jokesHandler struct {
 
 const maxLimit = 1
 
-func (j jokesHandler) parseSkipAndLimit(r *http.Request) (Pagination, error) {
+func (j jokesHandler) parseSkipAndLimit(w http.ResponseWriter, r *http.Request) (Pagination, error) {
 	leng := len(j.jokes)
 
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
 	if err != nil {
 		limit = 1
 	}
-
 	skip, err := strconv.Atoi(r.URL.Query().Get("skip"))
 	if err != nil {
 		skip = 1
 	}
 	if skip > leng {
-		skip = leng - 1
+		w.WriteHeader(http.StatusNoContent)
+		return Pagination{}, nil
 	}
 	if skip < 0 {
 		skip = 1
@@ -78,7 +78,7 @@ func (p jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	jokes := p.jokes
 
-	pagination, err := p.parseSkipAndLimit(r)
+	pagination, err := p.parseSkipAndLimit(w, r)
 
 	if err != nil {
 		fmt.Fprintln(w, err)
