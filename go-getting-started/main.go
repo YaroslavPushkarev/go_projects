@@ -2,23 +2,17 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net/http"
-	"os"
-	"sort"
-	"strings"
-	"text/template"
-	"time"
-
-	"github.com/bmizerany/pat"
-
-	// "github.com/gin-gonic/gin"
-
-	_ "github.com/heroku/x/hmetrics/onload"
+	"strconv"
 )
 
+type Pagination struct {
+	Skip  int
+	Limit int
+}
 type Joke struct {
 	ID    string `json:"id"`
 	Title string `json:"title"`
@@ -26,78 +20,146 @@ type Joke struct {
 	Body  string `json:"body"`
 }
 
-var jokes []Joke
-
-var tpl *template.Template
-
-func init() {
-	tpl = template.Must(template.ParseGlob("templates/*.html"))
-}
-func index(w http.ResponseWriter, r *http.Request) {
-	tpl.ExecuteTemplate(w, "index.html", nil)
+type jokesHandler struct {
+	jokes []Joke
 }
 
-func getJokes(w http.ResponseWriter, r *http.Request) {
-	tpl.ExecuteTemplate(w, "index.html", jokes)
-}
+func (j jokesHandler) parseSkipAndLimit(w http.ResponseWriter, r *http.Request) (Pagination, error) {
+	leng := len(j.jokes)
 
-func getJoke(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get(":id")
-	for _, item := range jokes {
-		if item.ID == id {
-			tpl.ExecuteTemplate(w, "id.html", item)
-			return
-		}
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil {
+		w.WriteHeader(http.StatusOK)
+		limit = 1
 	}
-}
-
-func randomJokes(w http.ResponseWriter, r *http.Request) {
-	rand.Seed(time.Now().UTC().UnixNano())
-
-	rand.Shuffle(len(jokes), func(i, j int) { jokes[i], jokes[j] = jokes[j], jokes[i] })
-
-	tpl.ExecuteTemplate(w, "random.html", jokes)
-}
-
-func fun(w http.ResponseWriter, r *http.Request) {
-	sort.SliceStable(jokes, func(i, j int) bool {
-		return jokes[i].Score > jokes[j].Score
-	})
-	tpl.ExecuteTemplate(w, "fun.html", jokes)
-}
-
-func search(w http.ResponseWriter, r *http.Request) {
-	value := r.FormValue("q")
-
-	for _, item := range jokes {
-		contain := strings.Contains(item.Title, value)
-		if contain == true {
-			tpl.ExecuteTemplate(w, "search.html", item)
-			return
-		}
+	skip, err := strconv.Atoi(r.URL.Query().Get("skip"))
+	if err != nil {
+		w.WriteHeader(http.StatusOK)
+		skip = 1
 	}
+	if skip > leng {
+		w.WriteHeader(http.StatusBadRequest)
+		return Pagination{}, nil
+	}
+	if skip < 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return Pagination{}, nil
+	}
+
+	if limit > leng {
+		limit = leng - skip
+	}
+
+	if limit < 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return Pagination{}, nil
+	}
+	if skip == limit {
+		w.WriteHeader(http.StatusBadRequest)
+	}
+	pagination := Pagination{Skip: skip, Limit: limit}
+	return pagination, nil
 }
+
+func (p jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method == http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if len(p.jokes) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		json.NewEncoder(w).Encode(p.jokes)
+		return
+	}
+
+	if len(p.jokes) == 1 {
+		json.NewEncoder(w).Encode(p.jokes)
+		return
+	}
+
+	jokes := p.jokes
+
+	pagination, err := p.parseSkipAndLimit(w, r)
+
+	if err != nil {
+		fmt.Fprintln(w, err)
+	}
+
+	res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]
+
+	json.NewEncoder(w).Encode(res)
+
+}
+
+// func getJoke(w http.ResponseWriter, r *http.Request) {
+// 	w.Header().Set("Content-Type", "application/json")
+// 	id := r.URL.Query().Get("id")
+
+// 	for _, item := range jokes {
+// 		if item.ID == id {
+// 			json.NewEncoder(w).Encode(item)
+// 		}
+// 	}
+// }
+
+// func randomJokes(w http.ResponseWriter, r *http.Request) {
+// 	w.Header().Set("Content-Type", "application/json")
+// 	rand.Seed(time.Now().UTC().UnixNano())
+
+// 	rand.Shuffle(len(jokes), func(i, j int) { jokes[i], jokes[j] = jokes[j], jokes[i] })
+// 	pagination, err := parseSkipAndLimit(r)
+// 	fmt.Fprintln(w, err)
+// 	res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]
+
+// 	json.NewEncoder(w).Encode(res)
+// }
+
+// func funniest(w http.ResponseWriter, r *http.Request) {
+// 	w.Header().Set("Content-Type", "application/json")
+
+// 	sort.SliceStable(jokes, func(i, j int) bool {
+// 		return jokes[i].Score > jokes[j].Score
+// 	})
+
+// 	pagination, err := parseSkipAndLimit(r)
+// 	fmt.Fprintln(w, err)
+// 	res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]
+
+// 	json.NewEncoder(w).Encode(res)
+// }
+
+// func search(w http.ResponseWriter, r *http.Request) {
+// 	w.Header().Set("Content-Type", "application/json")
+// 	var arr []string
+
+// 	value := r.URL.Query().Get("input")
+
+// 	for _, item := range jokes {
+// 		if strings.Contains(item.Title, value) {
+// 			arr = append(arr, item.Title)
+// 		}
+// 	}
+
+// 	json.NewEncoder(w).Encode(arr)
+
+// }
 
 func main() {
-
 	content, _ := ioutil.ReadFile("reddit_jokes.json")
+	jokes := []Joke{}
 	json.Unmarshal(content, &jokes)
 
-	port := os.Getenv("PORT")
-
-	if port == "" {
-		log.Fatal(":8000")
-	}
-
-	r := pat.New()
-
-	r.Get("/", http.HandlerFunc(index))
-	r.Get("/jokes", http.HandlerFunc(getJokes))
-	r.Get("/jokes/:id", http.HandlerFunc(getJoke))
-	r.Get("/jokes/random/", http.HandlerFunc(randomJokes))
-	r.Get("/jokes/funniest/", http.HandlerFunc(fun))
-	r.Get("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("assets"))))
-	r.Get("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	r.Post("/search", http.HandlerFunc(search))
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	mux := http.NewServeMux()
+	mux.Handle("/jokes", jokesHandler{jokes})
+	log.Fatal(http.ListenAndServe(":8080", mux))
+	// http.HandleFunc("/", index)
+	// http.HandlerFunc("/jokes", pizzasHandler{&data})
+	// http.HandleFunc("/jokes/", getJoke)
+	// http.HandleFunc("/jokes/random/", randomJokes)
+	// http.HandleFunc("/jokes/funniest/", funniest)
+	// http.HandleFunc("/search", search)
+	// http.ListenAndServe(":8000", nil)
 }
