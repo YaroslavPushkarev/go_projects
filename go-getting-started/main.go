@@ -113,16 +113,16 @@ type Jokesdb struct {
 func getId(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 	id := r.URL.Query().Get("id")
-	var person Jokesdb
+	var jokes Jokesdb
 	collection := client.Database("Jokes").Collection("jokes")
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
-	err := collection.FindOne(ctx, Jokesdb{ID: id}).Decode(&person)
+	err := collection.FindOne(ctx, Jokesdb{ID: id}).Decode(&jokes)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(`{ "message": "` + err.Error() + `" }`))
 		return
 	}
-	json.NewEncoder(w).Encode(person)
+	json.NewEncoder(w).Encode(jokes)
 }
 
 // func randomJokes(w http.ResponseWriter, r *http.Request) {
