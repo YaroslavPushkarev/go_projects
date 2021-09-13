@@ -19,4 +19,8 @@ go 1.12
 // 	gorm.io/gorm v1.21.12 // indirect
 // )
 
-require github.com/stretchr/testify v1.7.0 // indirect
+require (
+	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/stretchr/testify v1.7.0 // indirect
+	go.mongodb.org/mongo-driver v1.7.2 // indirect
+)

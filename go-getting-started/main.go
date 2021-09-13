@@ -1,12 +1,18 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Pagination struct {
@@ -94,16 +100,30 @@ func (p jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// func getJoke(w http.ResponseWriter, r *http.Request) {
-// 	w.Header().Set("Content-Type", "application/json")
-// 	id := r.URL.Query().Get("id")
+var client *mongo.Client
 
-// 	for _, item := range jokes {
-// 		if item.ID == id {
-// 			json.NewEncoder(w).Encode(item)
-// 		}
-// 	}
-// }
+type Jokesdb struct {
+	Id    primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Body  string             `json:"body,omitempty" bson:"body,omitempty"`
+	ID    string             `json:"id,omitempty" bson:"id,omitempty"`
+	Score int                `json:"score,omitempty" bson:"score,omitempty"`
+	Title string             `json:"title,omitempty" bson:"title,omitempty"`
+}
+
+func getId(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-type", "application/json")
+	id := r.URL.Query().Get("id")
+	var person Jokesdb
+	collection := client.Database("Jokes").Collection("jokes")
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	err := collection.FindOne(ctx, Jokesdb{ID: id}).Decode(&person)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		return
+	}
+	json.NewEncoder(w).Encode(person)
+}
 
 // func randomJokes(w http.ResponseWriter, r *http.Request) {
 // 	w.Header().Set("Content-Type", "application/json")
@@ -152,9 +172,16 @@ func main() {
 	jokes := []Joke{}
 	json.Unmarshal(content, &jokes)
 
-	mux := http.NewServeMux()
-	mux.Handle("/jokes", jokesHandler{jokes})
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	clientOptions := options.Client().ApplyURI("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+	client, _ = mongo.Connect(ctx, clientOptions)
+
+	http.Handle("/jokes", jokesHandler{jokes})
+	http.HandleFunc("/jokesdb", getId)
+	log.Fatal(http.ListenAndServe(":8000", nil))
+	// mux := http.NewServeMux()
+	// mux.Handle("/jokes", jokesHandler{jokes})
+	// log.Fatal(http.ListenAndServe(":8080", mux))
 	// http.HandleFunc("/", index)
 	// http.HandlerFunc("/jokes", pizzasHandler{&data})
 	// http.HandleFunc("/jokes/", getJoke)
