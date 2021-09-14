@@ -161,7 +161,7 @@ func TestJokesHandler_pagination(t *testing.T) {
 		{
 			name:       "skip 2 limit 2",
 			want:       storage[2:4],
-			statusCode: http.StatusBadRequest,
+			statusCode: http.StatusOK,
 			skip:       "2",
 			limit:      "2",
 		},

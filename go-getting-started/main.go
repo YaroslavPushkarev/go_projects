@@ -60,9 +60,7 @@ func (j jokesHandler) parseSkipAndLimit(w http.ResponseWriter, r *http.Request) 
 		w.WriteHeader(http.StatusBadRequest)
 		return Pagination{}, nil
 	}
-	if skip == limit {
-		w.WriteHeader(http.StatusBadRequest)
-	}
+
 	pagination := Pagination{Skip: skip, Limit: limit}
 	return pagination, nil
 }
