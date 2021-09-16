@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -19,11 +20,12 @@ type Pagination struct {
 	Skip  int
 	Limit int
 }
+
 type Joke struct {
-	ID    string `json:"id"`
-	Title string `json:"title"`
-	Score int    `json:"score"`
-	Body  string `json:"body"`
+	ID    string `json:"id" bson:"id"`
+	Title string `json:"title" bson:"title"`
+	Score int    `json:"score" bson:"score"`
+	Body  string `json:"body" bson:"body"`
 }
 
 type jokesHandler struct {
@@ -65,7 +67,7 @@ func (j jokesHandler) parseSkipAndLimit(w http.ResponseWriter, r *http.Request) 
 	return pagination, nil
 }
 
-func (p jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (j jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method == http.MethodPost {
@@ -73,20 +75,20 @@ func (p jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(p.jokes) == 0 {
+	if len(j.jokes) == 0 {
 		w.WriteHeader(http.StatusNoContent)
-		json.NewEncoder(w).Encode(p.jokes)
+		json.NewEncoder(w).Encode(j.jokes)
 		return
 	}
 
-	if len(p.jokes) == 1 {
-		json.NewEncoder(w).Encode(p.jokes)
+	if len(j.jokes) == 1 {
+		json.NewEncoder(w).Encode(j.jokes)
 		return
 	}
 
-	jokes := p.jokes
+	jokes := j.jokes
 
-	pagination, err := p.parseSkipAndLimit(w, r)
+	pagination, err := j.parseSkipAndLimit(w, r)
 
 	if err != nil {
 		fmt.Fprintln(w, err)
@@ -100,26 +102,26 @@ func (p jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 var client *mongo.Client
 
-type Jokesdb struct {
-	Id    primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Body  string             `json:"body,omitempty" bson:"body,omitempty"`
-	ID    string             `json:"id,omitempty" bson:"id,omitempty"`
-	Score int                `json:"score,omitempty" bson:"score,omitempty"`
-	Title string             `json:"title,omitempty" bson:"title,omitempty"`
-}
-
 func getId(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
+
 	id := r.URL.Query().Get("id")
-	var jokes Jokesdb
+
+	var jokes Joke
+
 	collection := client.Database("Jokes").Collection("jokes")
-	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
-	err := collection.FindOne(ctx, Jokesdb{ID: id}).Decode(&jokes)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	query := map[string]interface{}{"id": id}
+
+	err := collection.FindOne(ctx, query).Decode(&jokes)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(`{ "message": "` + err.Error() + `" }`))
 		return
 	}
+
 	json.NewEncoder(w).Encode(jokes)
 }
 
@@ -138,9 +140,20 @@ func getId(w http.ResponseWriter, r *http.Request) {
 // func funniest(w http.ResponseWriter, r *http.Request) {
 // 	w.Header().Set("Content-Type", "application/json")
 
-// 	sort.SliceStable(jokes, func(i, j int) bool {
-// 		return jokes[i].Score > jokes[j].Score
-// 	})
+// 	collection := client.Database("Jokes").Collection("jokes")
+// 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+// 	defer cancel()
+// 	var jokes Joke
+// 	filter := bson.M{}
+// 	findOptions := options.Find()
+// 	findOptions.SetSort(bson.D{{"score", 1}})
+// 	cursor, _ := collection.Find(ctx, filter, findOptions)
+// 	defer cursor.Close(ctx)
+// 	// sort.SliceStable(jokes, func(i, j int) bool {
+// 	// 	return jokes[i].Score > jokes[j].Score
+// 	// })
+// 	json.NewEncoder(w).Encode(jokes)
+// }
 
 // 	pagination, err := parseSkipAndLimit(r)
 // 	fmt.Fprintln(w, err)
@@ -149,42 +162,49 @@ func getId(w http.ResponseWriter, r *http.Request) {
 // 	json.NewEncoder(w).Encode(res)
 // }
 
-// func search(w http.ResponseWriter, r *http.Request) {
-// 	w.Header().Set("Content-Type", "application/json")
-// 	var arr []string
+func search(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var jokes []Joke
+	collection := client.Database("Jokes").Collection("jokes")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
-// 	value := r.URL.Query().Get("input")
+	query := bson.M{
+		"title": bson.M{
+			"$regex": primitive.Regex{
+				Pattern: "Hello",
+				Options: "i",
+			},
+		},
+	}
+	cursor, err := collection.Find(ctx, query)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		return
+	}
+	for cursor.Next(ctx) {
+		var joke Joke
+		cursor.Decode(&joke)
+		jokes = append(jokes, joke)
+	}
 
-// 	for _, item := range jokes {
-// 		if strings.Contains(item.Title, value) {
-// 			arr = append(arr, item.Title)
-// 		}
-// 	}
+	json.NewEncoder(w).Encode(jokes)
 
-// 	json.NewEncoder(w).Encode(arr)
-
-// }
+}
 
 func main() {
 	content, _ := ioutil.ReadFile("reddit_jokes.json")
 	jokes := []Joke{}
 	json.Unmarshal(content, &jokes)
 
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	clientOptions := options.Client().ApplyURI("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 	client, _ = mongo.Connect(ctx, clientOptions)
 
 	http.Handle("/jokes", jokesHandler{jokes})
 	http.HandleFunc("/jokesdb", getId)
+	http.HandleFunc("/jokes/search", search)
 	log.Fatal(http.ListenAndServe(":8000", nil))
-	// mux := http.NewServeMux()
-	// mux.Handle("/jokes", jokesHandler{jokes})
-	// log.Fatal(http.ListenAndServe(":8080", mux))
-	// http.HandleFunc("/", index)
-	// http.HandlerFunc("/jokes", pizzasHandler{&data})
-	// http.HandleFunc("/jokes/", getJoke)
-	// http.HandleFunc("/jokes/random/", randomJokes)
-	// http.HandleFunc("/jokes/funniest/", funniest)
-	// http.HandleFunc("/search", search)
-	// http.ListenAndServe(":8000", nil)
 }
