@@ -77,12 +77,18 @@ func (j jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if len(j.jokes) == 0 {
 		w.WriteHeader(http.StatusNoContent)
-		json.NewEncoder(w).Encode(j.jokes)
+		err := json.NewEncoder(w).Encode(j.jokes)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
 	if len(j.jokes) == 1 {
-		json.NewEncoder(w).Encode(j.jokes)
+		err := json.NewEncoder(w).Encode(j.jokes)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -96,8 +102,10 @@ func (j jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]
 
-	json.NewEncoder(w).Encode(res)
-
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 var client *mongo.Client
@@ -118,11 +126,13 @@ func getId(w http.ResponseWriter, r *http.Request) {
 	err := collection.FindOne(ctx, query).Decode(&jokes)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{ "message": "` + err.Error() + `" }`))
 		return
 	}
 
-	json.NewEncoder(w).Encode(jokes)
+	err = json.NewEncoder(w).Encode(jokes)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 // func randomJokes(w http.ResponseWriter, r *http.Request) {
@@ -164,8 +174,11 @@ func getId(w http.ResponseWriter, r *http.Request) {
 
 func search(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	var jokes []Joke
+
 	search := r.URL.Query().Get("search")
+
 	collection := client.Database("Jokes").Collection("jokes")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -181,24 +194,31 @@ func search(w http.ResponseWriter, r *http.Request) {
 	cursor, err := collection.Find(ctx, query)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{ "message": "` + err.Error() + `" }`))
 		return
 	}
 	for cursor.Next(ctx) {
 		var joke Joke
-		cursor.Decode(&joke)
+		err := cursor.Decode(&joke)
+		if err != nil {
+			panic(err)
+		}
 		jokes = append(jokes, joke)
 	}
 
-	json.NewEncoder(w).Encode(jokes)
+	err = json.NewEncoder(w).Encode(jokes)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+	}
 
 }
 
 func main() {
 	content, _ := ioutil.ReadFile("reddit_jokes.json")
 	jokes := []Joke{}
-	json.Unmarshal(content, &jokes)
-
+	err := json.Unmarshal(content, &jokes)
+	if err != nil {
+		fmt.Println(err)
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	clientOptions := options.Client().ApplyURI("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
