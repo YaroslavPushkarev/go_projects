@@ -165,6 +165,7 @@ func getId(w http.ResponseWriter, r *http.Request) {
 func search(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var jokes []Joke
+	search := r.URL.Query().Get("search")
 	collection := client.Database("Jokes").Collection("jokes")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -172,7 +173,7 @@ func search(w http.ResponseWriter, r *http.Request) {
 	query := bson.M{
 		"title": bson.M{
 			"$regex": primitive.Regex{
-				Pattern: "Hello",
+				Pattern: search,
 				Options: "i",
 			},
 		},
