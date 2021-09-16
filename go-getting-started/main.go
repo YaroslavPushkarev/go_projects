@@ -147,23 +147,41 @@ func getId(w http.ResponseWriter, r *http.Request) {
 // 	json.NewEncoder(w).Encode(res)
 // }
 
-// func funniest(w http.ResponseWriter, r *http.Request) {
-// 	w.Header().Set("Content-Type", "application/json")
+func funniest(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 
-// 	collection := client.Database("Jokes").Collection("jokes")
-// 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-// 	defer cancel()
-// 	var jokes Joke
-// 	filter := bson.M{}
-// 	findOptions := options.Find()
-// 	findOptions.SetSort(bson.D{{"score", 1}})
-// 	cursor, _ := collection.Find(ctx, filter, findOptions)
-// 	defer cursor.Close(ctx)
-// 	// sort.SliceStable(jokes, func(i, j int) bool {
-// 	// 	return jokes[i].Score > jokes[j].Score
-// 	// })
-// 	json.NewEncoder(w).Encode(jokes)
-// }
+	collection := client.Database("Jokes").Collection("jokes")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	findOptions := options.Find()
+
+	findOptions.SetSort(bson.D{{"score", 1}})
+
+	sortCursor, err := collection.Find(ctx, bson.D{
+		{"score", bson.D{
+			{"$gt", 4000},
+		}},
+	}, findOptions)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var jokes []Joke
+	if err = sortCursor.All(ctx, &jokes); err != nil {
+		log.Fatal(err)
+	}
+	// for cursor.Next(ctx) {
+	// 	var joke Joke
+	// 	err := cursor.Decode(&joke)
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+	// 	jokes = append(jokes, joke)
+	// }
+	json.NewEncoder(w).Encode(jokes)
+}
 
 // 	pagination, err := parseSkipAndLimit(r)
 // 	fmt.Fprintln(w, err)
@@ -227,5 +245,6 @@ func main() {
 	http.Handle("/jokes", jokesHandler{jokes})
 	http.HandleFunc("/jokesdb", getId)
 	http.HandleFunc("/jokes/search", search)
+	http.HandleFunc("/jokes/funniest", funniest)
 	log.Fatal(http.ListenAndServe(":8000", nil))
 }
