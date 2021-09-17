@@ -135,60 +135,55 @@ func getId(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// func randomJokes(w http.ResponseWriter, r *http.Request) {
-// 	w.Header().Set("Content-Type", "application/json")
-// 	rand.Seed(time.Now().UTC().UnixNano())
-
-// 	rand.Shuffle(len(jokes), func(i, j int) { jokes[i], jokes[j] = jokes[j], jokes[i] })
-// 	pagination, err := parseSkipAndLimit(r)
-// 	fmt.Fprintln(w, err)
-// 	res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]
-
-// 	json.NewEncoder(w).Encode(res)
-// }
-
-func funniest(w http.ResponseWriter, r *http.Request) {
+func randomJokes(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	var jokes []Joke
 
 	collection := client.Database("Jokes").Collection("jokes")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+	pip := bson.D{{Key: "$sample", Value: bson.D{{Key: "size", Value: 5}}}}
+	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{pip})
+	if err != nil {
+		fmt.Println(err)
+	}
+	if err = cursor.All(ctx, &jokes); err != nil {
+		panic(err)
+	}
+
+	err = json.NewEncoder(w).Encode(jokes)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+	}
+}
+
+func funniest(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var jokes []Joke
+
+	collection := client.Database("Jokes").Collection("jokes")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	findOptions := options.Find()
+	findOptions.SetSort(bson.D{{Key: "score", Value: 1}}).SetLimit(20)
 
-	findOptions.SetSort(bson.D{{"score", 1}})
-
-	sortCursor, err := collection.Find(ctx, bson.D{
-		{"score", bson.D{
-			{"$gt", 4000},
-		}},
-	}, findOptions)
-
+	cursor, err := collection.Find(ctx, bson.D{}, findOptions)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	var jokes []Joke
-	if err = sortCursor.All(ctx, &jokes); err != nil {
+	if err = cursor.All(ctx, &jokes); err != nil {
 		log.Fatal(err)
 	}
-	// for cursor.Next(ctx) {
-	// 	var joke Joke
-	// 	err := cursor.Decode(&joke)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// 	jokes = append(jokes, joke)
-	// }
-	json.NewEncoder(w).Encode(jokes)
+
+	err = json.NewEncoder(w).Encode(jokes)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
-
-// 	pagination, err := parseSkipAndLimit(r)
-// 	fmt.Fprintln(w, err)
-// 	res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]
-
-// 	json.NewEncoder(w).Encode(res)
-// }
 
 func search(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -209,6 +204,7 @@ func search(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	}
+
 	cursor, err := collection.Find(ctx, query)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -227,7 +223,6 @@ func search(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 	}
-
 }
 
 func main() {
@@ -246,5 +241,6 @@ func main() {
 	http.HandleFunc("/jokesdb", getId)
 	http.HandleFunc("/jokes/search", search)
 	http.HandleFunc("/jokes/funniest", funniest)
+	http.HandleFunc("/jokes/random", randomJokes)
 	log.Fatal(http.ListenAndServe(":8000", nil))
 }
