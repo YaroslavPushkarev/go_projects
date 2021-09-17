@@ -153,7 +153,7 @@ func randomJokes(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(jokes)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
