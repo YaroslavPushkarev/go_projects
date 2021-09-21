@@ -110,17 +110,20 @@ func (j jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 var client *mongo.Client
 
-func getJokes(w http.ResponseWriter, r *http.Request) {
+func (j jokesHandler) getJokes(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 
-	var jokes []Joke
+	pagination, err := j.parseSkipAndLimit(w, r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
 
 	collection := client.Database("Jokes").Collection("jokes")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	findOptions := options.Find()
-	findOptions.SetLimit(20)
+	findOptions.SetLimit(int64(pagination.Limit)).SetSkip(int64(pagination.Skip))
 
 	cursor, err := collection.Find(ctx, bson.M{}, findOptions)
 	if err != nil {
@@ -134,21 +137,19 @@ func getJokes(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-		jokes = append(jokes, joke)
+		j.jokes = append(j.jokes, joke)
 	}
 
-	err = json.NewEncoder(w).Encode(jokes)
+	err = json.NewEncoder(w).Encode(j.jokes)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func getId(w http.ResponseWriter, r *http.Request) {
+func (j jokesHandler) getId(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 
 	id := r.URL.Query().Get("id")
-
-	var jokes Joke
 
 	collection := client.Database("Jokes").Collection("jokes")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -156,47 +157,48 @@ func getId(w http.ResponseWriter, r *http.Request) {
 
 	query := map[string]interface{}{"id": id}
 
-	err := collection.FindOne(ctx, query).Decode(&jokes)
+	err := collection.FindOne(ctx, query).Decode(&j.jokes)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(jokes)
+	err = json.NewEncoder(w).Encode(j.jokes)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func randomJokes(w http.ResponseWriter, r *http.Request) {
+func (j jokesHandler) randomJokes(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var jokes []Joke
+	pagination, err := j.parseSkipAndLimit(w, r)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	collection := client.Database("Jokes").Collection("jokes")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	pipeline := bson.D{{Key: "$sample", Value: bson.D{{Key: "size", Value: 5}}}}
+	pipeline := bson.D{{Key: "$sample", Value: bson.D{{Key: "size", Value: pagination.Limit}}}}
 
 	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{pipeline})
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	if err = cursor.All(ctx, &jokes); err != nil {
+	if err = cursor.All(ctx, &j.jokes); err != nil {
 		panic(err)
 	}
 
-	if err = json.NewEncoder(w).Encode(jokes); err != nil {
+	if err = json.NewEncoder(w).Encode(j.jokes); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func funniest(w http.ResponseWriter, r *http.Request) {
+func (j jokesHandler) funniest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	var jokes []Joke
 
 	collection := client.Database("Jokes").Collection("jokes")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -211,20 +213,18 @@ func funniest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = cursor.All(ctx, &jokes); err != nil {
+	if err = cursor.All(ctx, &j.jokes); err != nil {
 		log.Fatal(err)
 	}
 
-	err = json.NewEncoder(w).Encode(jokes)
+	err = json.NewEncoder(w).Encode(j.jokes)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func search(w http.ResponseWriter, r *http.Request) {
+func (j jokesHandler) search(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	var jokes []Joke
 
 	search := r.URL.Query().Get("search")
 
@@ -252,16 +252,16 @@ func search(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-		jokes = append(jokes, joke)
+		j.jokes = append(j.jokes, joke)
 	}
 
-	err = json.NewEncoder(w).Encode(jokes)
+	err = json.NewEncoder(w).Encode(j.jokes)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-// func createJoke(w http.ResponseWriter, r *http.Request) {
+// func (j jokesHandler)createJoke(w http.ResponseWriter, r *http.Request) {
 // 	collection := client.Database("Jokes").Collection("jokes")
 // 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 // 	defer cancel()
@@ -286,17 +286,19 @@ func main() {
 		fmt.Println(err)
 	}
 
+	jh := jokesHandler{jokes}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	clientOptions := options.Client().ApplyURI("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 	client, _ = mongo.Connect(ctx, clientOptions)
 
-	http.Handle("/j", jokesHandler{jokes})
-	http.HandleFunc("/jokes", getJokes)
-	http.HandleFunc("/jokes/id", getId)
-	http.HandleFunc("/jokes/search", search)
-	http.HandleFunc("/jokes/funniest", funniest)
-	http.HandleFunc("/jokes/random", randomJokes)
+	http.Handle("/j", jh)
+	http.HandleFunc("/jokes", jh.getJokes)
+	http.HandleFunc("/jokes/id", jh.getId)
+	http.HandleFunc("/jokes/search", jh.search)
+	http.HandleFunc("/jokes/funniest", jh.funniest)
+	http.HandleFunc("/jokes/random", jokesHandler{jokes}.randomJokes)
 	// http.HandleFunc("/jokes/create", createJoke)
 	log.Fatal(http.ListenAndServe(":8000", nil))
 }
