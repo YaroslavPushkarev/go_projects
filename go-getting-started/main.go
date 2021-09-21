@@ -110,6 +110,39 @@ func (j jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 var client *mongo.Client
 
+func getJokes(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-type", "application/json")
+
+	var jokes []Joke
+
+	collection := client.Database("Jokes").Collection("jokes")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	findOptions := options.Find()
+	findOptions.SetLimit(20)
+
+	cursor, err := collection.Find(ctx, bson.M{}, findOptions)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
+		var joke Joke
+		err := cursor.Decode(&joke)
+		if err != nil {
+			panic(err)
+		}
+		jokes = append(jokes, joke)
+	}
+
+	err = json.NewEncoder(w).Encode(jokes)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func getId(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 
@@ -137,22 +170,25 @@ func getId(w http.ResponseWriter, r *http.Request) {
 
 func randomJokes(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	var jokes []Joke
 
 	collection := client.Database("Jokes").Collection("jokes")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	pip := bson.D{{Key: "$sample", Value: bson.D{{Key: "size", Value: 5}}}}
-	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{pip})
+
+	pipeline := bson.D{{Key: "$sample", Value: bson.D{{Key: "size", Value: 5}}}}
+
+	cursor, err := collection.Aggregate(ctx, mongo.Pipeline{pipeline})
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	if err = cursor.All(ctx, &jokes); err != nil {
 		panic(err)
 	}
 
-	err = json.NewEncoder(w).Encode(jokes)
-	if err != nil {
+	if err = json.NewEncoder(w).Encode(jokes); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -167,7 +203,7 @@ func funniest(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	findOptions := options.Find()
-	findOptions.SetSort(bson.D{{Key: "score", Value: 1}}).SetLimit(20)
+	findOptions.SetSort(bson.D{{Key: "score", Value: -1}}).SetLimit(20)
 
 	cursor, err := collection.Find(ctx, bson.D{}, findOptions)
 	if err != nil {
@@ -221,9 +257,26 @@ func search(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(jokes)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
+
+// func createJoke(w http.ResponseWriter, r *http.Request) {
+// 	collection := client.Database("Jokes").Collection("jokes")
+// 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+// 	defer cancel()
+
+// 	_, err := collection.InsertOne(ctx, bson.D{
+// 		{Key: "body", Value: "An im-pasta"},
+// 		{Key: "id", Value: "aw42r54t"},
+// 		{Key: "score", Value: 3},
+// 		{Key: "title", Value: "What do you call a fake noodle?"},
+// 	})
+
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 	}
+// }
 
 func main() {
 	content, _ := ioutil.ReadFile("reddit_jokes.json")
@@ -232,15 +285,18 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	clientOptions := options.Client().ApplyURI("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 	client, _ = mongo.Connect(ctx, clientOptions)
 
-	http.Handle("/jokes", jokesHandler{jokes})
-	http.HandleFunc("/jokesdb", getId)
+	http.Handle("/j", jokesHandler{jokes})
+	http.HandleFunc("/jokes", getJokes)
+	http.HandleFunc("/jokes/id", getId)
 	http.HandleFunc("/jokes/search", search)
 	http.HandleFunc("/jokes/funniest", funniest)
 	http.HandleFunc("/jokes/random", randomJokes)
+	// http.HandleFunc("/jokes/create", createJoke)
 	log.Fatal(http.ListenAndServe(":8000", nil))
 }
