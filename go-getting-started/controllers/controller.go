@@ -20,7 +20,7 @@ var collection = config.ConnectDB()
 
 func CreateJoke(w http.ResponseWriter, r *http.Request) {
 	_, err := collection.InsertOne(context.TODO(), bson.D{
-		{Key: "body", Value: "An im-pasta"},
+		{Key: "body", Value: "A im-pasta"},
 		{Key: "id", Value: "aw42r54t"},
 		{Key: "score", Value: 3},
 		{Key: "title", Value: "What do you call a fake noodle?"},
