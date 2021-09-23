@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/heroku/go-getting-started/controllers"
+
 	"github.com/heroku/go-getting-started/config"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -256,20 +258,6 @@ func search(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (j jokesHandler) createJoke(w http.ResponseWriter, r *http.Request) {
-	_, err := collection.InsertOne(context.TODO(), bson.D{
-		{Key: "body", Value: "An im-pasta"},
-		{Key: "id", Value: "aw42r54t"},
-		{Key: "score", Value: 3},
-		{Key: "title", Value: "What do you call a fake noodle?"},
-	})
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
-}
-
 func main() {
 	content, _ := ioutil.ReadFile("reddit_jokes.json")
 	jokes := []Joke{}
@@ -286,6 +274,6 @@ func main() {
 	http.HandleFunc("/jokes/search", search)
 	http.HandleFunc("/jokes/funniest", jh.funniest)
 	http.HandleFunc("/jokes/random", jh.randomJokes)
-	http.HandleFunc("/jokes/create", jh.createJoke)
+	http.HandleFunc("/jokes/create", controllers.CreateJoke)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
