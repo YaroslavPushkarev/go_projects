@@ -9,9 +9,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/heroku/go-getting-started/controllers"
-
 	"github.com/heroku/go-getting-started/config"
+	"github.com/heroku/go-getting-started/controllers"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -258,6 +257,15 @@ func search(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (j jokesHandler) createJoke(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method == http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	res, err := controllers.InsertData(collection, controllers.Joke{"sdfsf", "Sdfs", 3, "4324"})
+}
+
 func main() {
 	content, _ := ioutil.ReadFile("reddit_jokes.json")
 	jokes := []Joke{}
@@ -274,6 +282,6 @@ func main() {
 	http.HandleFunc("/jokes/search", search)
 	http.HandleFunc("/jokes/funniest", jh.funniest)
 	http.HandleFunc("/jokes/random", jh.randomJokes)
-	http.HandleFunc("/jokes/create", controllers.CreateJoke)
+	http.HandleFunc("/jokes/create", jh.createJoke)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
