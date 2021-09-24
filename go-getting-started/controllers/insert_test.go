@@ -23,7 +23,7 @@ func TestInsertData(t *testing.T) {
 	}
 
 	collection := client.Database("Jokes").Collection("jokes")
-	res, err := InsertData(collection, Joke{"as", "Sdfs", 4, "4324"})
+	res, err := InsertData(collection, Joke{"asdada", "Sdfs", 3, "4324"})
 	assert.Nil(t, err)
 	assert.IsType(t, &mongo.InsertOneResult{}, res)
 }

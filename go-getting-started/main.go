@@ -258,12 +258,17 @@ func search(w http.ResponseWriter, r *http.Request) {
 }
 
 func (j jokesHandler) createJoke(w http.ResponseWriter, r *http.Request) {
-
 	if r.Method == http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+
 	res, err := controllers.InsertData(collection, controllers.Joke{"sdfsf", "Sdfs", 3, "4324"})
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(res)
 }
 
 func main() {
