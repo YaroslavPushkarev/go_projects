@@ -11,6 +11,7 @@ import (
 
 	"github.com/heroku/go-getting-started/config"
 	"github.com/heroku/go-getting-started/controllers"
+	"github.com/heroku/go-getting-started/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,15 +23,8 @@ type Pagination struct {
 	Limit int
 }
 
-type Joke struct {
-	ID    string `json:"id" bson:"id"`
-	Title string `json:"title" bson:"title"`
-	Score int    `json:"score" bson:"score"`
-	Body  string `json:"body" bson:"body"`
-}
-
 type jokesHandler struct {
-	jokes []Joke
+	jokes []models.Joke
 }
 
 func (j jokesHandler) parseSkipAndLimit(w http.ResponseWriter, r *http.Request) (Pagination, error) {
@@ -114,7 +108,7 @@ var collection = config.ConnectDB()
 func (j jokesHandler) getJokes(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 
-	var jokes []Joke
+	var jokes []models.Joke
 
 	pagination, err := j.parseSkipAndLimit(w, r)
 	if err != nil {
@@ -131,7 +125,7 @@ func (j jokesHandler) getJokes(w http.ResponseWriter, r *http.Request) {
 	}
 	defer cursor.Close(context.TODO())
 	for cursor.Next(context.TODO()) {
-		var joke Joke
+		var joke models.Joke
 		err := cursor.Decode(&joke)
 		if err != nil {
 			panic(err)
@@ -148,13 +142,26 @@ func (j jokesHandler) getJokes(w http.ResponseWriter, r *http.Request) {
 func (j jokesHandler) getId(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 
-	var jokes Joke
+	_, err := collection.Indexes().CreateOne(
+		context.Background(),
+		mongo.IndexModel{
+			Keys: bson.M{
+				"id": 1,
+			},
+			Options: options.Index().SetUnique(true),
+		},
+	)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	var jokes models.Joke
 
 	id := r.URL.Query().Get("id")
 
 	query := map[string]interface{}{"id": id}
 
-	err := collection.FindOne(context.TODO(), query).Decode(&jokes)
+	err = collection.FindOne(context.TODO(), query).Decode(&jokes)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -169,7 +176,7 @@ func (j jokesHandler) getId(w http.ResponseWriter, r *http.Request) {
 func (j jokesHandler) randomJokes(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var jokes []Joke
+	var jokes []models.Joke
 
 	pagination, err := j.parseSkipAndLimit(w, r)
 	if err != nil {
@@ -195,7 +202,7 @@ func (j jokesHandler) randomJokes(w http.ResponseWriter, r *http.Request) {
 func (j jokesHandler) funniest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var jokes []Joke
+	var jokes []models.Joke
 
 	pagination, err := j.parseSkipAndLimit(w, r)
 	if err != nil {
@@ -226,7 +233,7 @@ func search(w http.ResponseWriter, r *http.Request) {
 
 	search := r.URL.Query().Get("search")
 
-	var jokes []Joke
+	var jokes []models.Joke
 
 	query := bson.M{
 		"title": bson.M{
@@ -243,7 +250,7 @@ func search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for cursor.Next(context.TODO()) {
-		var joke Joke
+		var joke models.Joke
 		err := cursor.Decode(&joke)
 		if err != nil {
 			panic(err)
@@ -263,17 +270,17 @@ func (j jokesHandler) createJoke(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := controllers.InsertData(collection, controllers.Joke{"sdfsf", "Sdfs", 3, "4324"})
-
+	res, err := controllers.InsertData(collection, models.Joke{Body: "sdfsf", ID: "Sdfs", Score: 3, Title: "4324"})
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	fmt.Println(res)
 }
 
 func main() {
 	content, _ := ioutil.ReadFile("reddit_jokes.json")
-	jokes := []Joke{}
+	jokes := []models.Joke{}
 	err := json.Unmarshal(content, &jokes)
 	if err != nil {
 		fmt.Println(err)

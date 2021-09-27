@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/heroku/go-getting-started/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,21 +17,21 @@ func TestJokesHandler(t *testing.T) {
 	tt := []struct {
 		name       string
 		method     string
-		input      []Joke
+		input      []models.Joke
 		want       string
 		statusCode int
 	}{
 		{
 			name:       "without jokes",
 			method:     http.MethodGet,
-			input:      []Joke{},
+			input:      []models.Joke{},
 			want:       "[]",
 			statusCode: http.StatusNoContent,
 		},
 		{
 			name:   "with jokes",
 			method: http.MethodGet,
-			input: []Joke{
+			input: []models.Joke{
 				{
 					ID:    "1",
 					Title: "Foo",
@@ -44,7 +45,7 @@ func TestJokesHandler(t *testing.T) {
 		{
 			name:       "with bad method",
 			method:     http.MethodPost,
-			input:      []Joke{},
+			input:      []models.Joke{},
 			want:       "Method not allowed",
 			statusCode: http.StatusMethodNotAllowed,
 		},
@@ -70,7 +71,7 @@ func TestJokesHandler(t *testing.T) {
 
 func TestJokesHandler_pagination(t *testing.T) {
 
-	storage := []Joke{
+	storage := []models.Joke{
 		{
 			Body:  "Now I have to say \"Leroy can you please paint the fence?\"",
 			ID:    "5tz52q",
@@ -104,21 +105,21 @@ func TestJokesHandler_pagination(t *testing.T) {
 	}
 	tt := []struct {
 		name       string
-		want       []Joke
+		want       []models.Joke
 		statusCode int
 		skip       string
 		limit      string
 	}{
 		{
 			name:       "skip 0 limit 1 - expect id 5tz52q",
-			want:       []Joke{storage[0]},
+			want:       []models.Joke{storage[0]},
 			statusCode: http.StatusOK,
 			skip:       "0",
 			limit:      "1",
 		},
 		{
 			name:       "skip 100000000000000 limit 1",
-			want:       []Joke{},
+			want:       []models.Joke{},
 			statusCode: http.StatusBadRequest,
 			skip:       "100000000000",
 			limit:      "1",
@@ -132,28 +133,28 @@ func TestJokesHandler_pagination(t *testing.T) {
 		},
 		{
 			name:       "skip 2 limit -1",
-			want:       []Joke{},
+			want:       []models.Joke{},
 			statusCode: http.StatusBadRequest,
 			skip:       "2",
 			limit:      "-1",
 		},
 		{
 			name:       "skip 8 limit -1",
-			want:       []Joke{},
+			want:       []models.Joke{},
 			statusCode: http.StatusBadRequest,
 			skip:       "8",
 			limit:      "-1",
 		},
 		{
 			name:       "skip 100000000000000 limit 100000000000000",
-			want:       []Joke{},
+			want:       []models.Joke{},
 			statusCode: http.StatusBadRequest,
 			skip:       "10000000000000000",
 			limit:      "100000000000000000",
 		},
 		{
 			name:       "skip -2 limit 4",
-			want:       []Joke{},
+			want:       []models.Joke{},
 			statusCode: http.StatusBadRequest,
 			skip:       "-2",
 			limit:      "4",
@@ -167,7 +168,7 @@ func TestJokesHandler_pagination(t *testing.T) {
 		},
 		{
 			name:       "skip goodbye",
-			want:       []Joke{storage[1]},
+			want:       []models.Joke{storage[1]},
 			statusCode: http.StatusOK,
 			skip:       "goodbye",
 			limit:      "goodbye",
@@ -191,7 +192,7 @@ func TestJokesHandler_pagination(t *testing.T) {
 				t.Errorf("reading reponse body: %v", err)
 			}
 
-			got := []Joke{}
+			got := []models.Joke{}
 			err = json.Unmarshal(b, &got)
 
 			if err != nil {

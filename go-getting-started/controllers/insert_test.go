@@ -2,47 +2,27 @@ package controllers
 
 import (
 	"context"
-	"log"
 	"testing"
-	"time"
 
+	"github.com/heroku/go-getting-started/models"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+type mockCollection struct {
+}
+
+func (m *mockCollection) InsertOne(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error) {
+	c := &mongo.InsertOneResult{}
+	return c, nil
+}
+
 func TestControllers_InsertData(t *testing.T) {
-	tt := []struct {
-		name  string
-		title string
-	}{
-		{
-			name:  "title string",
-			title: "3",
-		},
-		{
-			name:  "empty title",
-			title: "",
-		},
-	}
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
+	mockCollection := &mockCollection{}
+	res, err := InsertData(mockCollection, models.Joke{Body: "asdada", ID: "sdf", Score: 3, Title: "4324"})
 
-			clientOptions := options.Client().ApplyURI("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
+	assert.Nil(t, err)
+	assert.IsType(t, &mongo.InsertOneResult{}, res)
 
-			client, err := mongo.Connect(ctx, clientOptions)
-
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			collection := client.Database("Jokes").Collection("jokes")
-			res, err := InsertData(collection, Joke{"asdada", tc.title, 3, "4324"})
-
-			assert.Nil(t, err)
-			assert.IsType(t, &mongo.InsertOneResult{}, res)
-		})
-	}
 }
