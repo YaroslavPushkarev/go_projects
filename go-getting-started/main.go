@@ -162,7 +162,6 @@ func (j jokesHandler) getId(w http.ResponseWriter, r *http.Request) {
 	query := map[string]interface{}{"id": id}
 
 	err = controllers.FindId(collection, query).Decode(&jokes)
-	// err = collection.FindOne(context.TODO(), query).Decode(&jokes)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

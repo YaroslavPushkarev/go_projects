@@ -18,11 +18,6 @@ func (m *mockCollection) InsertOne(ctx context.Context, document interface{}, op
 	return c, nil
 }
 
-func (m *mockCollection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) *mongo.SingleResult {
-	c := &mongo.SingleResult{}
-	return c
-}
-
 func TestControllers_InsertData(t *testing.T) {
 	tt := []struct {
 		name  string
