@@ -14,5 +14,6 @@ func InsertData(collection dbinterface.CollectionAPI, joke models.Joke) (*mongo.
 	if err != nil {
 		return res, err
 	}
+
 	return res, err
 }

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/heroku/go-getting-started/config"
 	"github.com/heroku/go-getting-started/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -39,7 +40,7 @@ func TestJokesHandler(t *testing.T) {
 					Body:  "sdfsf",
 				},
 			},
-			want:       `[{"id":"1","title":"Foo","score":10,"body":"sdfsf"}]`,
+			want:       `[{"body":"sdfsf","id":"1","score":10,"title":"Foo"}]`,
 			statusCode: http.StatusOK,
 		},
 		{
@@ -53,10 +54,11 @@ func TestJokesHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			collection := config.ConnectDB("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 			request := httptest.NewRequest(tc.method, "/jokes?skip=1&limit=3", nil)
 			responseRecorder := httptest.NewRecorder()
 
-			jokesHandler{tc.input}.ServeHTTP(responseRecorder, request)
+			jokesHandler{tc.input, collection}.ServeHTTP(responseRecorder, request)
 
 			if responseRecorder.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)
@@ -177,11 +179,11 @@ func TestJokesHandler_pagination(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			uri := fmt.Sprintf("/jokes?skip=%s&limit=%s", tc.skip, tc.limit)
-
+			collection := config.ConnectDB("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 			request := httptest.NewRequest(http.MethodGet, uri, nil)
 			responseRecorder := httptest.NewRecorder()
 
-			jokesHandler{storage}.ServeHTTP(responseRecorder, request)
+			jokesHandler{storage, collection}.ServeHTTP(responseRecorder, request)
 
 			if responseRecorder.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)

@@ -24,7 +24,8 @@ type Pagination struct {
 }
 
 type jokesHandler struct {
-	jokes []models.Joke
+	jokes      []models.Joke
+	collection *mongo.Collection
 }
 
 func (j jokesHandler) parseSkipAndLimit(w http.ResponseWriter, r *http.Request) (Pagination, error) {
@@ -103,8 +104,6 @@ func (j jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-var collection = config.ConnectDB()
-
 func (j jokesHandler) getJokes(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 
@@ -118,7 +117,7 @@ func (j jokesHandler) getJokes(w http.ResponseWriter, r *http.Request) {
 	findOptions := options.Find()
 	findOptions.SetLimit(int64(pagination.Limit)).SetSkip(int64(pagination.Skip))
 
-	cursor, err := collection.Find(context.TODO(), bson.M{}, findOptions)
+	cursor, err := j.collection.Find(context.TODO(), bson.M{}, findOptions)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -142,7 +141,7 @@ func (j jokesHandler) getJokes(w http.ResponseWriter, r *http.Request) {
 func (j jokesHandler) getId(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 
-	_, err := collection.Indexes().CreateOne(
+	_, err := j.collection.Indexes().CreateOne(
 		context.Background(),
 		mongo.IndexModel{
 			Keys: bson.M{
@@ -161,7 +160,7 @@ func (j jokesHandler) getId(w http.ResponseWriter, r *http.Request) {
 
 	query := map[string]interface{}{"id": id}
 
-	err = controllers.FindId(collection, query).Decode(&jokes)
+	err = controllers.FindId(j.collection, query).Decode(&jokes)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -185,7 +184,7 @@ func (j jokesHandler) randomJokes(w http.ResponseWriter, r *http.Request) {
 
 	pipeline := bson.D{{Key: "$sample", Value: bson.D{{Key: "size", Value: pagination.Limit}}}}
 
-	cursor, err := collection.Aggregate(context.TODO(), mongo.Pipeline{pipeline})
+	cursor, err := j.collection.Aggregate(context.TODO(), mongo.Pipeline{pipeline})
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -212,7 +211,7 @@ func (j jokesHandler) funniest(w http.ResponseWriter, r *http.Request) {
 	findOptions := options.Find()
 	findOptions.SetSort(bson.D{{Key: "score", Value: -1}}).SetLimit(int64(pagination.Limit))
 
-	cursor, err := collection.Find(context.TODO(), bson.D{}, findOptions)
+	cursor, err := j.collection.Find(context.TODO(), bson.D{}, findOptions)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -228,7 +227,7 @@ func (j jokesHandler) funniest(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func search(w http.ResponseWriter, r *http.Request) {
+func (j jokesHandler) search(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	search := r.URL.Query().Get("search")
@@ -244,7 +243,7 @@ func search(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	cursor, err := collection.Find(context.TODO(), query)
+	cursor, err := j.collection.Find(context.TODO(), query)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -270,7 +269,7 @@ func (j jokesHandler) createJoke(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := controllers.InsertData(collection, models.Joke{Body: "sdfsf", ID: "Sdfs", Score: 3, Title: "4324"})
+	res, err := controllers.InsertData(j.collection, models.Joke{Body: "sdfsf", ID: "Sdfs", Score: 3, Title: "4324"})
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -286,12 +285,13 @@ func main() {
 		fmt.Println(err)
 	}
 
-	jh := jokesHandler{jokes}
+	collection := config.ConnectDB("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+	jh := jokesHandler{jokes, collection}
 
 	http.Handle("/j", jh)
 	http.HandleFunc("/jokes", jh.getJokes)
 	http.HandleFunc("/jokes/id", jh.getId)
-	http.HandleFunc("/jokes/search", search)
+	http.HandleFunc("/jokes/search", jh.search)
 	http.HandleFunc("/jokes/funniest", jh.funniest)
 	http.HandleFunc("/jokes/random", jh.randomJokes)
 	http.HandleFunc("/jokes/create", jh.createJoke)
