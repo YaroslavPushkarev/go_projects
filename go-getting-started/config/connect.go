@@ -2,7 +2,6 @@ package config
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -17,7 +16,7 @@ func ConnectDB(uri string) *mongo.Collection {
 	client, err := mongo.Connect(ctx, clientOptions)
 
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	collection := client.Database("Jokes").Collection("jokes")
