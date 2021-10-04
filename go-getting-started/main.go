@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/heroku/go-getting-started/config"
@@ -285,7 +286,7 @@ func main() {
 		fmt.Println(err)
 	}
 
-	collection := config.ConnectDB("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+	collection := config.ConnectDB(os.Getenv("MONGODB_URI"))
 	jh := jokesHandler{jokes, collection}
 
 	http.Handle("/j", jh)
