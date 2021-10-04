@@ -1,0 +1,108 @@
+package controllers
+
+import (
+	"testing"
+
+	"github.com/heroku/go-getting-started/config"
+	"github.com/heroku/go-getting-started/models"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestControllers_InsertData(t *testing.T) {
+	tt := []struct {
+		name string
+		want models.Joke
+	}{
+		{
+			name: "Big number",
+			want: models.Joke{
+				Body:  "asdada",
+				ID:    "sdfadsa",
+				Score: 4,
+				Title: "asd",
+			},
+		},
+		{
+			name: "less than zero",
+			want: models.Joke{
+				Body:  "asdada",
+				ID:    "sad",
+				Score: 4,
+				Title: "asd",
+			},
+		},
+		{
+			name: "zero",
+			want: models.Joke{
+				Body:  "asdaa",
+				ID:    "gsdfsf",
+				Score: 4,
+				Title: "asd",
+			},
+		},
+		{
+			name: "Empty title",
+			want: models.Joke{
+				Body:  "asdada",
+				ID:    "rdsf",
+				Score: 4,
+				Title: "asd",
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			var joke models.Joke
+
+			collection := config.ConnectDB("mongodb://localhost:27017")
+
+			res, err := InsertData(collection, tc.want)
+			assert.Nil(t, err)
+
+			err = FindId(collection, map[string]interface{}{"_id": res.InsertedID}).Decode(&joke)
+
+			assert.Nil(t, err)
+			assert.Equal(t, tc.want, joke)
+		})
+	}
+}
+
+func TestControllers_InsertDataID(t *testing.T) {
+	tt := []struct {
+		name   string
+		want   models.Joke
+		insert models.Joke
+	}{
+		{
+			name: "Big number",
+			insert: models.Joke{
+				Body:  "asdada",
+				ID:    "sdfadsa",
+				Score: 4,
+				Title: "asd",
+			},
+			want: models.Joke{
+				Body:  "",
+				ID:    "",
+				Score: 0,
+				Title: "",
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			var joke models.Joke
+
+			collection := config.ConnectDB("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+
+			_, err := InsertData(collection, tc.insert)
+			assert.NotNil(t, err)
+
+			err = FindId(collection, map[string]interface{}{"id": "sdfadsa"}).Decode(&joke)
+			assert.Nil(t, err)
+			assert.Equal(t, tc.insert, joke)
+		})
+	}
+}

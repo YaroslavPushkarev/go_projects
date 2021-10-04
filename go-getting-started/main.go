@@ -1,27 +1,32 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
+
+	"github.com/heroku/go-getting-started/config"
+	"github.com/heroku/go-getting-started/controllers"
+	"github.com/heroku/go-getting-started/models"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Pagination struct {
 	Skip  int
 	Limit int
 }
-type Joke struct {
-	ID    string `json:"id"`
-	Title string `json:"title"`
-	Score int    `json:"score"`
-	Body  string `json:"body"`
-}
 
 type jokesHandler struct {
-	jokes []Joke
+	jokes      []models.Joke
+	collection *mongo.Collection
 }
 
 func (j jokesHandler) parseSkipAndLimit(w http.ResponseWriter, r *http.Request) (Pagination, error) {
@@ -54,14 +59,12 @@ func (j jokesHandler) parseSkipAndLimit(w http.ResponseWriter, r *http.Request) 
 		w.WriteHeader(http.StatusBadRequest)
 		return Pagination{}, nil
 	}
-	if skip == limit {
-		w.WriteHeader(http.StatusBadRequest)
-	}
+
 	pagination := Pagination{Skip: skip, Limit: limit}
 	return pagination, nil
 }
 
-func (p jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (j jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method == http.MethodPost {
@@ -69,20 +72,26 @@ func (p jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(p.jokes) == 0 {
+	if len(j.jokes) == 0 {
 		w.WriteHeader(http.StatusNoContent)
-		json.NewEncoder(w).Encode(p.jokes)
+		err := json.NewEncoder(w).Encode(j.jokes)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
-	if len(p.jokes) == 1 {
-		json.NewEncoder(w).Encode(p.jokes)
+	if len(j.jokes) == 1 {
+		err := json.NewEncoder(w).Encode(j.jokes)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
-	jokes := p.jokes
+	jokes := j.jokes
 
-	pagination, err := p.parseSkipAndLimit(w, r)
+	pagination, err := j.parseSkipAndLimit(w, r)
 
 	if err != nil {
 		fmt.Fprintln(w, err)
@@ -90,76 +99,202 @@ func (p jokesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]
 
-	json.NewEncoder(w).Encode(res)
-
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
-// func getJoke(w http.ResponseWriter, r *http.Request) {
-// 	w.Header().Set("Content-Type", "application/json")
-// 	id := r.URL.Query().Get("id")
+func (j jokesHandler) getJokes(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-type", "application/json")
 
-// 	for _, item := range jokes {
-// 		if item.ID == id {
-// 			json.NewEncoder(w).Encode(item)
-// 		}
-// 	}
-// }
+	var jokes []models.Joke
 
-// func randomJokes(w http.ResponseWriter, r *http.Request) {
-// 	w.Header().Set("Content-Type", "application/json")
-// 	rand.Seed(time.Now().UTC().UnixNano())
+	pagination, err := j.parseSkipAndLimit(w, r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
 
-// 	rand.Shuffle(len(jokes), func(i, j int) { jokes[i], jokes[j] = jokes[j], jokes[i] })
-// 	pagination, err := parseSkipAndLimit(r)
-// 	fmt.Fprintln(w, err)
-// 	res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]
+	findOptions := options.Find()
+	findOptions.SetLimit(int64(pagination.Limit)).SetSkip(int64(pagination.Skip))
 
-// 	json.NewEncoder(w).Encode(res)
-// }
+	cursor, err := j.collection.Find(context.TODO(), bson.M{}, findOptions)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(context.TODO())
+	for cursor.Next(context.TODO()) {
+		var joke models.Joke
+		err := cursor.Decode(&joke)
+		if err != nil {
+			panic(err)
+		}
+		jokes = append(jokes, joke)
+	}
 
-// func funniest(w http.ResponseWriter, r *http.Request) {
-// 	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(jokes)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
 
-// 	sort.SliceStable(jokes, func(i, j int) bool {
-// 		return jokes[i].Score > jokes[j].Score
-// 	})
+func (j jokesHandler) getId(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-type", "application/json")
 
-// 	pagination, err := parseSkipAndLimit(r)
-// 	fmt.Fprintln(w, err)
-// 	res := jokes[pagination.Skip : pagination.Limit+pagination.Skip]
+	_, err := j.collection.Indexes().CreateOne(
+		context.Background(),
+		mongo.IndexModel{
+			Keys: bson.M{
+				"id": 1,
+			},
+			Options: options.Index().SetUnique(true),
+		},
+	)
+	if err != nil {
+		fmt.Println(err)
+	}
 
-// 	json.NewEncoder(w).Encode(res)
-// }
+	var jokes models.Joke
 
-// func search(w http.ResponseWriter, r *http.Request) {
-// 	w.Header().Set("Content-Type", "application/json")
-// 	var arr []string
+	id := r.URL.Query().Get("id")
 
-// 	value := r.URL.Query().Get("input")
+	query := map[string]interface{}{"id": id}
 
-// 	for _, item := range jokes {
-// 		if strings.Contains(item.Title, value) {
-// 			arr = append(arr, item.Title)
-// 		}
-// 	}
+	err = controllers.FindId(j.collection, query).Decode(&jokes)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
-// 	json.NewEncoder(w).Encode(arr)
+	err = json.NewEncoder(w).Encode(jokes)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
 
-// }
+func (j jokesHandler) randomJokes(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var jokes []models.Joke
+
+	pagination, err := j.parseSkipAndLimit(w, r)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	pipeline := bson.D{{Key: "$sample", Value: bson.D{{Key: "size", Value: pagination.Limit}}}}
+
+	cursor, err := j.collection.Aggregate(context.TODO(), mongo.Pipeline{pipeline})
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	if err = cursor.All(context.TODO(), &jokes); err != nil {
+		panic(err)
+	}
+
+	if err = json.NewEncoder(w).Encode(jokes); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (j jokesHandler) funniest(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var jokes []models.Joke
+
+	pagination, err := j.parseSkipAndLimit(w, r)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	findOptions := options.Find()
+	findOptions.SetSort(bson.D{{Key: "score", Value: -1}}).SetLimit(int64(pagination.Limit))
+
+	cursor, err := j.collection.Find(context.TODO(), bson.D{}, findOptions)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if err = cursor.All(context.TODO(), &jokes); err != nil {
+		log.Fatal(err)
+	}
+
+	err = json.NewEncoder(w).Encode(jokes)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (j jokesHandler) search(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	search := r.URL.Query().Get("search")
+
+	var jokes []models.Joke
+
+	query := bson.M{
+		"title": bson.M{
+			"$regex": primitive.Regex{
+				Pattern: search,
+				Options: "i",
+			},
+		},
+	}
+
+	cursor, err := j.collection.Find(context.TODO(), query)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	for cursor.Next(context.TODO()) {
+		var joke models.Joke
+		err := cursor.Decode(&joke)
+		if err != nil {
+			panic(err)
+		}
+		jokes = append(jokes, joke)
+	}
+
+	err = json.NewEncoder(w).Encode(jokes)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (j jokesHandler) createJoke(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	res, err := controllers.InsertData(j.collection, models.Joke{Body: "sdfsf", ID: "Sdfs", Score: 3, Title: "4324"})
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println(res)
+}
 
 func main() {
 	content, _ := ioutil.ReadFile("reddit_jokes.json")
-	jokes := []Joke{}
-	json.Unmarshal(content, &jokes)
+	jokes := []models.Joke{}
+	err := json.Unmarshal(content, &jokes)
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	mux := http.NewServeMux()
-	mux.Handle("/jokes", jokesHandler{jokes})
-	log.Fatal(http.ListenAndServe(":8080", mux))
-	// http.HandleFunc("/", index)
-	// http.HandlerFunc("/jokes", pizzasHandler{&data})
-	// http.HandleFunc("/jokes/", getJoke)
-	// http.HandleFunc("/jokes/random/", randomJokes)
-	// http.HandleFunc("/jokes/funniest/", funniest)
-	// http.HandleFunc("/search", search)
-	// http.ListenAndServe(":8000", nil)
+	collection := config.ConnectDB(os.Getenv("MONGODB_URI"))
+	jh := jokesHandler{jokes, collection}
+
+	http.Handle("/j", jh)
+	http.HandleFunc("/jokes", jh.getJokes)
+	http.HandleFunc("/jokes/id", jh.getId)
+	http.HandleFunc("/jokes/search", jh.search)
+	http.HandleFunc("/jokes/funniest", jh.funniest)
+	http.HandleFunc("/jokes/random", jh.randomJokes)
+	http.HandleFunc("/jokes/create", jh.createJoke)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
