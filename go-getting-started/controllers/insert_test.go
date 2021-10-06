@@ -73,21 +73,27 @@ func TestControllers_InsertDataID(t *testing.T) {
 		name   string
 		want   models.Joke
 		insert models.Joke
+		id     string
 	}{
 		{
-			name: "Big number",
+			name: "id ",
 			insert: models.Joke{
 				Body:  "asdada",
 				ID:    "sdfadsa",
 				Score: 4,
-				Title: "asd",
+				Title: "ad",
 			},
-			want: models.Joke{
-				Body:  "",
-				ID:    "",
-				Score: 0,
-				Title: "",
+			id: "sdfadsa",
+		},
+		{
+			name: "id ",
+			insert: models.Joke{
+				Body:  "A Sunday school teacher is concerned that his students might be a litt",
+				ID:    "5tz2wj",
+				Score: 4,
+				Title: "his hand",
 			},
+			id: "5tz2wj",
 		},
 	}
 
@@ -95,12 +101,12 @@ func TestControllers_InsertDataID(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var joke models.Joke
 
-			collection := config.ConnectDB("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+			collection := config.ConnectDB("mongodb://localhost:27017")
 
-			_, err := InsertData(collection, tc.insert)
-			assert.NotNil(t, err)
+			res, err := InsertData(collection, tc.insert)
+			assert.Nil(t, err)
 
-			err = FindId(collection, map[string]interface{}{"id": "sdfadsa"}).Decode(&joke)
+			err = FindId(collection, map[string]interface{}{"_id": res.InsertedID}).Decode(&joke)
 			assert.Nil(t, err)
 			assert.Equal(t, tc.insert, joke)
 		})
