@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/heroku/go-getting-started/config"
 	"github.com/heroku/go-getting-started/models"
+	storage "github.com/heroku/go-getting-started/pkg/storage/mongo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -54,7 +54,7 @@ func TestJokesHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			collection := config.ConnectDB("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+			collection := storage.ConnectDB("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 			request := httptest.NewRequest(tc.method, "/jokes?skip=1&limit=3", nil)
 			responseRecorder := httptest.NewRecorder()
 
@@ -73,7 +73,7 @@ func TestJokesHandler(t *testing.T) {
 
 func TestJokesHandler_pagination(t *testing.T) {
 
-	storage := []models.Joke{
+	data := []models.Joke{
 		{
 			Body:  "Now I have to say \"Leroy can you please paint the fence?\"",
 			ID:    "5tz52q",
@@ -114,7 +114,7 @@ func TestJokesHandler_pagination(t *testing.T) {
 	}{
 		{
 			name:       "skip 0 limit 1 - expect id 5tz52q",
-			want:       []models.Joke{storage[0]},
+			want:       []models.Joke{data[0]},
 			statusCode: http.StatusOK,
 			skip:       "0",
 			limit:      "1",
@@ -128,7 +128,7 @@ func TestJokesHandler_pagination(t *testing.T) {
 		},
 		{
 			name:       "skip 2 limit 100000000000000",
-			want:       storage[2:],
+			want:       data[2:],
 			statusCode: http.StatusOK,
 			skip:       "2",
 			limit:      "100000000000000",
@@ -163,14 +163,14 @@ func TestJokesHandler_pagination(t *testing.T) {
 		},
 		{
 			name:       "skip 2 limit 2",
-			want:       storage[2:4],
+			want:       data[2:4],
 			statusCode: http.StatusOK,
 			skip:       "2",
 			limit:      "2",
 		},
 		{
 			name:       "skip goodbye",
-			want:       []models.Joke{storage[1]},
+			want:       []models.Joke{data[1]},
 			statusCode: http.StatusOK,
 			skip:       "goodbye",
 			limit:      "goodbye",
@@ -179,11 +179,11 @@ func TestJokesHandler_pagination(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			uri := fmt.Sprintf("/jokes?skip=%s&limit=%s", tc.skip, tc.limit)
-			collection := config.ConnectDB("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+			collection := storage.ConnectDB("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 			request := httptest.NewRequest(http.MethodGet, uri, nil)
 			responseRecorder := httptest.NewRecorder()
 
-			jokesHandler{storage, collection}.ServeHTTP(responseRecorder, request)
+			jokesHandler{data, collection}.ServeHTTP(responseRecorder, request)
 
 			if responseRecorder.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, responseRecorder.Code)

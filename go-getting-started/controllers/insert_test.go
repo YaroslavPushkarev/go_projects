@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/heroku/go-getting-started/config"
 	"github.com/heroku/go-getting-started/models"
+	storage "github.com/heroku/go-getting-started/pkg/storage/mongo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,11 +44,11 @@ func TestControllers_InsertData(t *testing.T) {
 		},
 	}
 
+	collection := storage.ConnectDB("mongodb://localhost:27017")
+
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			var joke models.Joke
-
-			collection := config.ConnectDB("mongodb://localhost:27017")
 
 			res, err := InsertData(collection, tc.want)
 			assert.Nil(t, err)
@@ -61,7 +61,7 @@ func TestControllers_InsertData(t *testing.T) {
 	}
 }
 
-func TestControllers_InsertDataID(t *testing.T) {
+func TestControllers_InsertIdenticalID(t *testing.T) {
 
 	n := 5
 	b := make([]byte, n)
@@ -87,10 +87,10 @@ func TestControllers_InsertDataID(t *testing.T) {
 		},
 	}
 
+	collection := storage.ConnectDB("mongodb://localhost:27017")
+
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-
-			collection := config.ConnectDB("mongodb://localhost:27017")
 
 			_, err := InsertData(collection, tc.insert)
 			assert.Nil(t, err)
