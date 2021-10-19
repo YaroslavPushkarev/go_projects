@@ -12,6 +12,8 @@ import (
 	storage "github.com/heroku/go-getting-started/pkg/storage/mongo"
 )
 
+const port = ":8080"
+
 func main() {
 	content, _ := ioutil.ReadFile("reddit_jokes.json")
 	jokes := []api.Joke{}
@@ -20,15 +22,10 @@ func main() {
 		fmt.Println(err)
 	}
 
-	collection := storage.ConnectDB(os.Getenv("MONGODB_URI"))
-	jh := api.JokesHandler{jokes, collection}
+	_ = storage.ConnectDB(os.Getenv("MONGODB_URI"))
 
-	http.Handle("/j", jh)
-	http.HandleFunc("/jokes", jh.getJokes)
-	http.HandleFunc("/jokes/id", jh.getId)
-	http.HandleFunc("/jokes/search", jh.search)
-	http.HandleFunc("/jokes/funniest", jh.funniest)
-	http.HandleFunc("/jokes/random", jh.randomJokes)
-	http.HandleFunc("/jokes/create", jh.createJoke)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	jh := api.JokesHandler{}
+
+	http.HandleFunc("/jokes/id", api.Midl(jh.GetId))
+	log.Fatal(http.ListenAndServe(port, nil))
 }

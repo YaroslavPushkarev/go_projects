@@ -1,23 +1,22 @@
-package controllers
+package api
 
 import (
 	"crypto/rand"
 	"fmt"
 	"testing"
 
-	"github.com/heroku/go-getting-started/models"
 	storage "github.com/heroku/go-getting-started/pkg/storage/mongo"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestControllers_InsertData(t *testing.T) {
+func TestControllers_InsertJoke(t *testing.T) {
 	tt := []struct {
 		name string
-		want models.Joke
+		want Joke
 	}{
 		{
 			name: "Big number",
-			want: models.Joke{
+			want: Joke{
 				Body:  "asdada",
 				ID:    "sdfadsa",
 				Score: 4,
@@ -26,7 +25,7 @@ func TestControllers_InsertData(t *testing.T) {
 		},
 		{
 			name: "zero",
-			want: models.Joke{
+			want: Joke{
 				Body:  "asdaa",
 				ID:    "gsdfsf",
 				Score: 4,
@@ -35,7 +34,7 @@ func TestControllers_InsertData(t *testing.T) {
 		},
 		{
 			name: "Empty title",
-			want: models.Joke{
+			want: Joke{
 				Body:  "asdada",
 				ID:    "rdsf",
 				Score: 4,
@@ -48,9 +47,9 @@ func TestControllers_InsertData(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			var joke models.Joke
+			var joke Joke
 
-			res, err := InsertData(collection, tc.want)
+			res, err := InsertJoke(collection, tc.want)
 			assert.Nil(t, err)
 
 			err = FindId(collection, map[string]interface{}{"_id": res.InsertedID}).Decode(&joke)
@@ -72,13 +71,13 @@ func TestControllers_InsertIdenticalID(t *testing.T) {
 
 	tt := []struct {
 		name   string
-		want   models.Joke
-		insert models.Joke
+		want   Joke
+		insert Joke
 		id     string
 	}{
 		{
 			name: "id",
-			insert: models.Joke{
+			insert: Joke{
 				Body:  "A Sunday school teacher is concerned that his students might be a litt",
 				ID:    randomID,
 				Score: 4,
@@ -92,10 +91,10 @@ func TestControllers_InsertIdenticalID(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 
-			_, err := InsertData(collection, tc.insert)
+			_, err := InsertJoke(collection, tc.insert)
 			assert.Nil(t, err)
 
-			_, err = InsertData(collection, tc.insert)
+			_, err = InsertJoke(collection, tc.insert)
 			assert.Error(t, err)
 
 		})

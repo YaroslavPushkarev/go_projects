@@ -1,6 +1,8 @@
 package api
 
-import "go.mongodb.org/mongo-driver/mongo"
+import (
+	"go.mongodb.org/mongo-driver/mongo"
+)
 
 type Joke struct {
 	Body  string `json:"body" bson:"body"`

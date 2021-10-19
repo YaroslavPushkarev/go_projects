@@ -1,7 +1,18 @@
+package api
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
 func (j JokesHandler) getJokes(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 
-	var jokes []models.Joke
+	var jokes []Joke
 
 	pagination, err := j.parseSkipAndLimit(w, r)
 	if err != nil {
@@ -13,12 +24,12 @@ func (j JokesHandler) getJokes(w http.ResponseWriter, r *http.Request) {
 
 	cursor, err := j.collection.Find(context.TODO(), bson.M{}, findOptions)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 	defer cursor.Close(context.TODO())
 	for cursor.Next(context.TODO()) {
-		var joke models.Joke
+		var joke Joke
 		err := cursor.Decode(&joke)
 		if err != nil {
 			panic(err)
@@ -28,6 +39,6 @@ func (j JokesHandler) getJokes(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(jokes)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusNoContent)
 	}
 }
