@@ -12,15 +12,15 @@ func GetJokes(db storage.JokesInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		cursor, err := db.GetJokes(bson.M{})
+		jokes, err := db.GetJokes(bson.M{})
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		err = json.NewEncoder(w).Encode(cursor)
+		err = json.NewEncoder(w).Encode(jokes)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusNoContent)
 		}
 	}
 }
