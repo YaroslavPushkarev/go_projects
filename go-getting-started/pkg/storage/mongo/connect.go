@@ -12,10 +12,10 @@ import (
 
 func ConnectDB(uri string) *mongo.Collection {
 	clientOptions := options.Client().ApplyURI(uri)
-	Ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(Ctx, clientOptions)
+	client, err := mongo.Connect(ctx, clientOptions)
 
 	if err != nil {
 		panic(err)
@@ -37,5 +37,4 @@ func ConnectDB(uri string) *mongo.Collection {
 	}
 
 	return collection
-
 }

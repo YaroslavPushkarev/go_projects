@@ -2,34 +2,28 @@ package api
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
+
+	storage "github.com/heroku/go-getting-started/pkg/storage/mongo"
 )
 
-func (j JokesHandler) GetId(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("content-type", "application/json")
-
-	var jokes Joke
-
-	id := r.URL.Query().Get("id")
-
-	query := map[string]interface{}{"id": id}
-
-	err := FindId(j.collection, query).Decode(&jokes)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	err = json.NewEncoder(w).Encode(jokes)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func Midl(next http.HandlerFunc) http.HandlerFunc {
+func GetId(db storage.JokesInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println("hello")
-		next(w, r)
+
+		w.Header().Set("content-type", "application/json")
+
+		id := r.URL.Query().Get("id")
+
+		res, err := db.FindId(id)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		err = json.NewEncoder(w).Encode(res)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNoContent)
+		}
 	}
+
 }

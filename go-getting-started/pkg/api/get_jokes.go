@@ -1,44 +1,26 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 
+	storage "github.com/heroku/go-getting-started/pkg/storage/mongo"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (j JokesHandler) getJokes(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("content-type", "application/json")
+func GetJokes(db storage.JokesInterface) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 
-	var jokes []Joke
-
-	pagination, err := j.parseSkipAndLimit(w, r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-	}
-
-	findOptions := options.Find()
-	findOptions.SetLimit(int64(pagination.Limit)).SetSkip(int64(pagination.Skip))
-
-	cursor, err := j.collection.Find(context.TODO(), bson.M{}, findOptions)
-	if err != nil {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	defer cursor.Close(context.TODO())
-	for cursor.Next(context.TODO()) {
-		var joke Joke
-		err := cursor.Decode(&joke)
+		cursor, err := db.GetJokes(bson.M{})
 		if err != nil {
-			panic(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
-		jokes = append(jokes, joke)
-	}
 
-	err = json.NewEncoder(w).Encode(jokes)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNoContent)
+		err = json.NewEncoder(w).Encode(cursor)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	}
 }

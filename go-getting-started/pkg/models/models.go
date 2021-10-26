@@ -1,8 +1,4 @@
-package api
-
-import (
-	"go.mongodb.org/mongo-driver/mongo"
-)
+package models
 
 type Joke struct {
 	Body  string `json:"body" bson:"body"`
@@ -14,9 +10,4 @@ type Joke struct {
 type Pagination struct {
 	Skip  int
 	Limit int
-}
-
-type JokesHandler struct {
-	jokes      []Joke
-	collection *mongo.Collection
 }
