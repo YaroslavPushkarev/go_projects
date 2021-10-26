@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"crypto/rand"
+	"fmt"
 	"testing"
 
 	"github.com/heroku/go-getting-started/config"
@@ -18,15 +20,6 @@ func TestControllers_InsertData(t *testing.T) {
 			want: models.Joke{
 				Body:  "asdada",
 				ID:    "sdfadsa",
-				Score: 4,
-				Title: "asd",
-			},
-		},
-		{
-			name: "less than zero",
-			want: models.Joke{
-				Body:  "asdada",
-				ID:    "sad",
 				Score: 4,
 				Title: "asd",
 			},
@@ -69,40 +62,42 @@ func TestControllers_InsertData(t *testing.T) {
 }
 
 func TestControllers_InsertDataID(t *testing.T) {
+
+	n := 5
+	b := make([]byte, n)
+	if _, err := rand.Read(b); err != nil {
+		panic(err)
+	}
+	randomID := fmt.Sprintf("%X", b)
+
 	tt := []struct {
 		name   string
 		want   models.Joke
 		insert models.Joke
+		id     string
 	}{
 		{
-			name: "Big number",
+			name: "id",
 			insert: models.Joke{
-				Body:  "asdada",
-				ID:    "sdfadsa",
+				Body:  "A Sunday school teacher is concerned that his students might be a litt",
+				ID:    randomID,
 				Score: 4,
-				Title: "asd",
-			},
-			want: models.Joke{
-				Body:  "",
-				ID:    "",
-				Score: 0,
-				Title: "",
+				Title: "his hand",
 			},
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			var joke models.Joke
 
-			collection := config.ConnectDB("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+			collection := config.ConnectDB("mongodb://localhost:27017")
 
 			_, err := InsertData(collection, tc.insert)
-			assert.NotNil(t, err)
-
-			err = FindId(collection, map[string]interface{}{"id": "sdfadsa"}).Decode(&joke)
 			assert.Nil(t, err)
-			assert.Equal(t, tc.insert, joke)
+
+			_, err = InsertData(collection, tc.insert)
+			assert.Error(t, err)
+
 		})
 	}
 }
