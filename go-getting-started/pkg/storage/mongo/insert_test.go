@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestControllers_InsertJoke(t *testing.T) {
+func TestControllers_InsertJoke_CheckingAddedJokes(t *testing.T) {
 	tt := []struct {
 		name string
 		want models.Joke
@@ -70,7 +70,7 @@ func TestControllers_InsertJoke(t *testing.T) {
 	}
 }
 
-func TestControllers_InsertIdenticalID(t *testing.T) {
+func TestControllers_InsertJoke_IdenticalID(t *testing.T) {
 
 	n := 5
 	b := make([]byte, n)
@@ -86,10 +86,10 @@ func TestControllers_InsertIdenticalID(t *testing.T) {
 		id     string
 	}{
 		{
-			name: randomID,
+			name: "identical id",
 			insert: models.Joke{
 				Body:  "A Sunday school teacher is concerned that his students might be a litt",
-				ID:    "dg",
+				ID:    randomID,
 				Score: 4,
 				Title: "his hand",
 			},
