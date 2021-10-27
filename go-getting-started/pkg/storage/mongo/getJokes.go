@@ -1,4 +1,4 @@
-package storage
+package mongo
 
 import (
 	"github.com/heroku/go-getting-started/pkg/models"
@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (j *JokesHandler) GetJokes(filter interface{}) ([]models.Joke, error) {
+func (j JokesStorage) GetJokes(filter interface{}) ([]models.Joke, error) {
 	jokes := []models.Joke{}
 
 	if filter == nil {

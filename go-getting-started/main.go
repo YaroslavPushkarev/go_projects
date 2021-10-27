@@ -1,41 +1,32 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/heroku/go-getting-started/pkg/api"
-	"github.com/heroku/go-getting-started/pkg/models"
+	"github.com/heroku/go-getting-started/pkg/storage/mongo"
 	storage "github.com/heroku/go-getting-started/pkg/storage/mongo"
 )
 
 const port = ":8080"
 
 func main() {
-	content, _ := ioutil.ReadFile("reddit_jokes.json")
-	jokes := []models.Joke{}
-	err := json.Unmarshal(content, &jokes)
-	if err != nil {
-		fmt.Println(err)
+
+	// collection := storage.ConnectDB(os.Getenv("MONGODB_URI"))
+	collection := storage.ConnectDB("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+
+	storage := mongo.JokesStorage{
+		Collection: collection,
 	}
 
-	ctx := context.TODO()
-
-	col := storage.ConnectDB(os.Getenv("MONGODB_URI"))
-
-	client := &storage.JokesHandler{
-		Collection: col,
-		Ctx:        ctx,
+	client := api.JokesHandler{
+		Storage: storage,
 	}
 
-	http.HandleFunc("/jokes/id", api.GetId(client))
-	http.HandleFunc("/jokes/jokes", api.GetJokes(client))
-	http.HandleFunc("/jokes/create", api.CreateJoke(client))
+	http.HandleFunc("/jokes/create", client.CreateJoke)
+	http.HandleFunc("/jokes/jokes", client.GetJokes)
+	http.HandleFunc("/jokes/id", client.GetId)
 
 	log.Fatal(http.ListenAndServe(port, nil))
 }

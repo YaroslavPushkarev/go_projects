@@ -1,13 +1,13 @@
-package storage_test
+package mongo_test
 
 import (
-	"context"
 	"crypto/rand"
 	"fmt"
 	"testing"
 
+	"github.com/heroku/go-getting-started/pkg/api"
 	"github.com/heroku/go-getting-started/pkg/models"
-	storage "github.com/heroku/go-getting-started/pkg/storage/mongo"
+	"github.com/heroku/go-getting-started/pkg/storage/mongo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,7 +18,7 @@ func TestControllers_InsertJoke_CheckingAddedJokes(t *testing.T) {
 		id   string
 	}{
 		{
-			name: "Big number",
+			name: "joke 1",
 			want: models.Joke{
 				Body:  "asdada",
 				ID:    "sdfadsa",
@@ -28,7 +28,7 @@ func TestControllers_InsertJoke_CheckingAddedJokes(t *testing.T) {
 			id: "sdfadsa",
 		},
 		{
-			name: "zero",
+			name: "joke 2",
 			want: models.Joke{
 				Body:  "asdaa",
 				ID:    "gsdfsf",
@@ -38,7 +38,7 @@ func TestControllers_InsertJoke_CheckingAddedJokes(t *testing.T) {
 			id: "gsdfsf",
 		},
 		{
-			name: "Empty title",
+			name: "joke 3",
 			want: models.Joke{
 				Body:  "asdada",
 				ID:    "rdsf",
@@ -49,20 +49,23 @@ func TestControllers_InsertJoke_CheckingAddedJokes(t *testing.T) {
 		},
 	}
 
-	ctx := context.TODO()
-	collection := storage.ConnectDB("mongodb://localhost:27017")
+	collection := mongo.ConnectDB("mongodb://localhost:27017")
 
-	client := &storage.JokesHandler{
+	str := mongo.JokesStorage{
 		Collection: collection,
-		Ctx:        ctx,
 	}
+
+	client := api.JokesHandler{
+		Storage: str,
+	}
+
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 
-			_, err := client.InsertJoke(tc.want)
+			err := client.Storage.InsertJoke(tc.want)
 			assert.Nil(t, err)
 
-			joke, err := client.FindId(tc.id)
+			joke, err := client.Storage.FindId(tc.id)
 
 			assert.Nil(t, err)
 			assert.Equal(t, tc.want, joke)
@@ -95,21 +98,23 @@ func TestControllers_InsertJoke_IdenticalID(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.TODO()
-	collection := storage.ConnectDB("mongodb://localhost:27017")
+	collection := mongo.ConnectDB("mongodb://localhost:27017")
 
-	client := &storage.JokesHandler{
+	str := mongo.JokesStorage{
 		Collection: collection,
-		Ctx:        ctx,
+	}
+
+	client := api.JokesHandler{
+		Storage: str,
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 
-			_, err := client.InsertJoke(tc.insert)
+			err := client.Storage.InsertJoke(tc.insert)
 			assert.Nil(t, err)
 
-			_, err = client.InsertJoke(tc.insert)
+			err = client.Storage.InsertJoke(tc.insert)
 			assert.Error(t, err)
 
 		})
