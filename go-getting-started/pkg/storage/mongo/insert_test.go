@@ -28,19 +28,19 @@ func TestControllers_InsertJoke_CheckingAddedJokes(t *testing.T) {
 			id: "sdfadsa",
 		},
 		{
-			name: "joke 2",
+			name: "empty title",
 			want: models.Joke{
 				Body:  "asdaa",
 				ID:    "gsdfsf",
 				Score: 4,
-				Title: "asd",
+				Title: "",
 			},
 			id: "gsdfsf",
 		},
 		{
-			name: "joke 3",
+			name: "empty body",
 			want: models.Joke{
-				Body:  "asdada",
+				Body:  "",
 				ID:    "rdsf",
 				Score: 4,
 				Title: "asd",
@@ -73,7 +73,7 @@ func TestControllers_InsertJoke_CheckingAddedJokes(t *testing.T) {
 	}
 }
 
-func TestControllers_InsertJoke_IdenticalID(t *testing.T) {
+func TestControllers_InsertJoke_WhatIfInsertIdenticalID(t *testing.T) {
 
 	n := 5
 	b := make([]byte, n)
