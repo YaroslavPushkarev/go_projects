@@ -28,6 +28,7 @@ func main() {
 	http.HandleFunc("/jokes/jokes", client.GetJokes)
 	http.HandleFunc("/jokes/id", client.GetId)
 	http.HandleFunc("/jokes/search", client.Search)
+	http.HandleFunc("/jokes/random", client.RandomJokes)
 
 	log.Fatal(http.ListenAndServe(port, nil))
 }

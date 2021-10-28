@@ -23,7 +23,10 @@ func (j JokesStorage) GetJokes(filter interface{}) ([]models.Joke, error) {
 
 	for cursor.Next(j.Ctx) {
 		row := models.Joke{}
-		cursor.Decode(&row)
+		err = cursor.Decode(&row)
+		if err != nil {
+			panic(err)
+		}
 		jokes = append(jokes, row)
 	}
 
