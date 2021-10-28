@@ -31,5 +31,6 @@ func (j JokesHandler) ParseSkipAndLimit(w http.ResponseWriter, r *http.Request) 
 	}
 
 	pagination := models.Pagination{Skip: skip, Limit: limit}
+
 	return pagination, nil
 }

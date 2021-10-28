@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (j JokesStorage) GetJokes(filter interface{}) ([]models.Joke, error) {
+func (j JokesStorage) GetJokes(filter interface{}, limit, skip int) ([]models.Joke, error) {
 	jokes := []models.Joke{}
 
 	if filter == nil {
@@ -14,7 +14,7 @@ func (j JokesStorage) GetJokes(filter interface{}) ([]models.Joke, error) {
 	}
 
 	findOptions := options.Find()
-	findOptions.SetLimit(int64(5)).SetSkip(int64(5))
+	findOptions.SetLimit(int64(limit)).SetSkip(int64(skip))
 
 	cursor, err := j.Collection.Find(j.Ctx, filter, findOptions)
 	if err != nil {
