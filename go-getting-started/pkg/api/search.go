@@ -12,12 +12,12 @@ func (j JokesHandler) Search(w http.ResponseWriter, r *http.Request) {
 
 	cursor, err := j.Storage.FindJoke(search)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	err = json.NewEncoder(w).Encode(cursor)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusNoContent)
 	}
 }
