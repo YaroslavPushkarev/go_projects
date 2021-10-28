@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/heroku/go-getting-started/pkg/api"
+
 	"github.com/heroku/go-getting-started/pkg/storage/mongo"
-	storage "github.com/heroku/go-getting-started/pkg/storage/mongo"
 )
 
 const port = ":8080"
@@ -14,7 +14,7 @@ const port = ":8080"
 func main() {
 
 	// collection := storage.ConnectDB(os.Getenv("MONGODB_URI"))
-	collection := storage.ConnectDB("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+	collection := mongo.ConnectDB("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 
 	storage := mongo.JokesStorage{
 		Collection: collection,
@@ -27,6 +27,7 @@ func main() {
 	http.HandleFunc("/jokes/create", client.CreateJoke)
 	http.HandleFunc("/jokes/jokes", client.GetJokes)
 	http.HandleFunc("/jokes/id", client.GetId)
+	http.HandleFunc("/jokes/search", client.Search)
 
 	log.Fatal(http.ListenAndServe(port, nil))
 }

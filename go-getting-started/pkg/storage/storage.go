@@ -6,6 +6,7 @@ import (
 
 type JokesStorage interface {
 	FindId(string) (models.Joke, error)
+	FindJoke(string) ([]models.Joke, error)
 	GetJokes(interface{}) ([]models.Joke, error)
 	InsertJoke(models.Joke) error
 }
