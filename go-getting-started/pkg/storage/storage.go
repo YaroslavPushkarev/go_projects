@@ -9,5 +9,6 @@ type JokesStorage interface {
 	FindJoke(string) ([]models.Joke, error)
 	GetJokes(interface{}) ([]models.Joke, error)
 	Random(interface{}) ([]models.Joke, error)
+	FuuniestJokes(interface{}) ([]models.Joke, error)
 	InsertJoke(models.Joke) error
 }

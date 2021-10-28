@@ -25,10 +25,11 @@ func main() {
 	}
 
 	http.HandleFunc("/jokes/create", client.CreateJoke)
-	http.HandleFunc("/jokes/jokes", client.GetJokes)
+	http.HandleFunc("/jokes/jokes", client.Get)
 	http.HandleFunc("/jokes/id", client.GetId)
 	http.HandleFunc("/jokes/search", client.Search)
 	http.HandleFunc("/jokes/random", client.RandomJokes)
+	http.HandleFunc("/jokes/funniest", client.Funniest)
 
 	log.Fatal(http.ListenAndServe(port, nil))
 }
