@@ -10,7 +10,7 @@ import (
 func (j JokesHandler) Funniest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	cursor, err := j.Storage.FuuniestJokes(bson.D{})
+	cursor, err := j.Storage.FunniestJokes(bson.D{})
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -18,6 +18,6 @@ func (j JokesHandler) Funniest(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(cursor)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNoContent)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 }

@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (j JokesStorage) FuuniestJokes(filter interface{}) ([]models.Joke, error) {
+func (j JokesStorage) FunniestJokes(filter interface{}) ([]models.Joke, error) {
 
 	jokes := []models.Joke{}
 
