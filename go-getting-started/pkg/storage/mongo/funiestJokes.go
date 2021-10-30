@@ -8,18 +8,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (j JokesStorage) FunniestJokes(filter interface{}) ([]models.Joke, error) {
+func (j JokesStorage) FunniestJokes(interface{}) ([]models.Joke, error) {
 
 	jokes := []models.Joke{}
-
-	if filter == nil {
-		filter = bson.M{}
-	}
 
 	findOptions := options.Find()
 	findOptions.SetSort(bson.D{{Key: "score", Value: -1}}).SetLimit(int64(20))
 
-	cursor, err := j.Collection.Find(j.Ctx, filter, findOptions)
+	cursor, err := j.Collection.Find(j.Ctx, findOptions)
 	if err != nil {
 		return jokes, err
 	}
