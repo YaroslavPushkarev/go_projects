@@ -12,7 +12,6 @@ import (
 const port = ":8080"
 
 func main() {
-
 	// collection := storage.ConnectDB(os.Getenv("MONGODB_URI"))
 	collection := mongo.ConnectDB("mongodb+srv://jokesdb:jokesdb@joke.kxki9.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 

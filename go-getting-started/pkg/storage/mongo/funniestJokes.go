@@ -1,22 +1,21 @@
 package mongo
 
 import (
-	"fmt"
-
 	"github.com/heroku/go-getting-started/pkg/models"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (j JokesStorage) Random(filter interface{}, limit int) ([]models.Joke, error) {
+func (j JokesStorage) FunniestJokes(filter interface{}, limit int) ([]models.Joke, error) {
 
 	jokes := []models.Joke{}
 
-	pipeline := bson.D{{Key: "$sample", Value: bson.D{{Key: "size", Value: limit}}}}
+	findOptions := options.Find()
+	findOptions.SetSort(bson.D{{Key: "score", Value: -1}}).SetLimit(int64(limit))
 
-	cursor, err := j.Collection.Aggregate(j.Ctx, mongo.Pipeline{pipeline})
+	cursor, err := j.Collection.Find(j.Ctx, filter, findOptions)
 	if err != nil {
-		fmt.Println(err)
+		return jokes, err
 	}
 
 	for cursor.Next(j.Ctx) {

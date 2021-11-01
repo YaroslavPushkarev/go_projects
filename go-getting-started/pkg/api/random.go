@@ -10,7 +10,9 @@ import (
 func (j JokesHandler) RandomJokes(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	cursor, err := j.Storage.Random(bson.M{})
+	pagination, err := j.ParseSkipAndLimit(w, r)
+
+	cursor, err := j.Storage.Random(bson.M{}, pagination.Limit)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 	}
