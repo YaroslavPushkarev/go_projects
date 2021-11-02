@@ -1,8 +1,6 @@
 package mongo
 
 import (
-	"context"
-
 	"github.com/heroku/go-getting-started/pkg/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -25,7 +23,7 @@ func (j JokesStorage) FindJoke(s string) ([]models.Joke, error) {
 		panic(err)
 	}
 
-	for cursor.Next(context.TODO()) {
+	for cursor.Next(j.Ctx) {
 		var joke models.Joke
 		err := cursor.Decode(&joke)
 		if err != nil {

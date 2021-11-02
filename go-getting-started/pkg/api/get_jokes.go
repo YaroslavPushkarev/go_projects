@@ -26,6 +26,6 @@ func (j JokesHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(jokes)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNoContent)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

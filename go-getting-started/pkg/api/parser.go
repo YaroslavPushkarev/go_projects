@@ -11,12 +11,12 @@ func (j JokesHandler) ParseSkipAndLimit(w http.ResponseWriter, r *http.Request) 
 
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
 	if err != nil {
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusBadRequest)
 		limit = 1
 	}
 	skip, err := strconv.Atoi(r.URL.Query().Get("skip"))
 	if err != nil {
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusBadRequest)
 		skip = 1
 	}
 

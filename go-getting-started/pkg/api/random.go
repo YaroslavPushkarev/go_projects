@@ -12,6 +12,11 @@ func (j JokesHandler) RandomJokes(w http.ResponseWriter, r *http.Request) {
 
 	pagination, err := j.ParseSkipAndLimit(w, r)
 
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	cursor, err := j.Storage.Random(bson.M{}, pagination.Limit)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)

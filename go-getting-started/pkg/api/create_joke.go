@@ -19,7 +19,7 @@ func (j JokesHandler) CreateJoke(w http.ResponseWriter, r *http.Request) {
 
 	score, err := strconv.Atoi(r.URL.Query().Get("score"))
 	if err != nil {
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusBadRequest)
 	}
 
 	title := r.URL.Query().Get("title")
