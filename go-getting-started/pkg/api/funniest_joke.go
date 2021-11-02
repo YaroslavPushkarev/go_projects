@@ -25,6 +25,6 @@ func (j JokesHandler) Funniest(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(cursor)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

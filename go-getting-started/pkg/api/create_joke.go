@@ -15,6 +15,11 @@ func (j JokesHandler) CreateJoke(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.Method == http.MethodPut {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	body := r.URL.Query().Get("body")
 
 	score, err := strconv.Atoi(r.URL.Query().Get("score"))
