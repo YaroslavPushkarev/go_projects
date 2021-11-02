@@ -27,7 +27,7 @@ func (j JokesHandler) CreateJoke(w http.ResponseWriter, r *http.Request) {
 	n := 5
 	b := make([]byte, n)
 	if _, err := rand.Read(b); err != nil {
-		panic(err)
+		fmt.Println("Сannot generate a number")
 	}
 	randomID := fmt.Sprintf("%X", b)
 
