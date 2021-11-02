@@ -18,6 +18,6 @@ func (j JokesHandler) GetId(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(res)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 }

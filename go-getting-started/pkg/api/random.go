@@ -22,6 +22,6 @@ func (j JokesHandler) RandomJokes(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}
 	if err = json.NewEncoder(w).Encode(cursor); err != nil {
-		http.Error(w, err.Error(), http.StatusNoContent)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 }

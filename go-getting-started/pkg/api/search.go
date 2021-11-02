@@ -18,6 +18,6 @@ func (j JokesHandler) Search(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(cursor)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNoContent)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 }
