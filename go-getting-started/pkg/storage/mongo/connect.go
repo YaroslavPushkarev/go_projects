@@ -1,9 +1,11 @@
-package config
+package mongo
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -21,6 +23,18 @@ func ConnectDB(uri string) *mongo.Collection {
 
 	collection := client.Database("Jokes").Collection("jokes")
 
-	return collection
+	_, err = collection.Indexes().CreateOne(
+		context.Background(),
+		mongo.IndexModel{
+			Keys: bson.M{
+				"id": 1,
+			},
+			Options: options.Index().SetUnique(true),
+		},
+	)
+	if err != nil {
+		fmt.Println(err)
+	}
 
+	return collection
 }

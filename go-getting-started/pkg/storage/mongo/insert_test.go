@@ -1,59 +1,71 @@
-package controllers
+package mongo_test
 
 import (
 	"crypto/rand"
 	"fmt"
 	"testing"
 
-	"github.com/heroku/go-getting-started/config"
-	"github.com/heroku/go-getting-started/models"
+	"github.com/heroku/go-getting-started/pkg/api"
+	"github.com/heroku/go-getting-started/pkg/models"
+	"github.com/heroku/go-getting-started/pkg/storage/mongo"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestControllers_InsertData(t *testing.T) {
+func TestControllers_InsertJoke_CheckingAddedJokes(t *testing.T) {
 	tt := []struct {
 		name string
 		want models.Joke
+		id   string
 	}{
 		{
-			name: "Big number",
+			name: "joke 1",
 			want: models.Joke{
 				Body:  "asdada",
 				ID:    "sdfadsa",
 				Score: 4,
 				Title: "asd",
 			},
+			id: "sdfadsa",
 		},
 		{
-			name: "zero",
+			name: "empty title",
 			want: models.Joke{
 				Body:  "asdaa",
 				ID:    "gsdfsf",
 				Score: 4,
-				Title: "asd",
+				Title: "",
 			},
+			id: "gsdfsf",
 		},
 		{
-			name: "Empty title",
+			name: "empty body",
 			want: models.Joke{
-				Body:  "asdada",
+				Body:  "",
 				ID:    "rdsf",
 				Score: 4,
 				Title: "asd",
 			},
+			id: "rdsf",
 		},
+	}
+
+	collection := mongo.ConnectDB("mongodb://localhost:27017")
+
+	str := mongo.JokesStorage{
+		Collection: collection,
+	}
+
+	client := api.JokesHandler{
+		Storage: str,
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			var joke models.Joke
 
-			collection := config.ConnectDB("mongodb://localhost:27017")
-
-			res, err := InsertData(collection, tc.want)
+			err := client.Storage.InsertJoke(tc.want)
 			assert.Nil(t, err)
 
-			err = FindId(collection, map[string]interface{}{"_id": res.InsertedID}).Decode(&joke)
+			joke, err := client.Storage.FindId(tc.id)
 
 			assert.Nil(t, err)
 			assert.Equal(t, tc.want, joke)
@@ -61,7 +73,7 @@ func TestControllers_InsertData(t *testing.T) {
 	}
 }
 
-func TestControllers_InsertDataID(t *testing.T) {
+func TestControllers_InsertJoke_WhatIfInsertIdenticalID(t *testing.T) {
 
 	n := 5
 	b := make([]byte, n)
@@ -77,7 +89,7 @@ func TestControllers_InsertDataID(t *testing.T) {
 		id     string
 	}{
 		{
-			name: "id",
+			name: "identical id",
 			insert: models.Joke{
 				Body:  "A Sunday school teacher is concerned that his students might be a litt",
 				ID:    randomID,
@@ -86,16 +98,23 @@ func TestControllers_InsertDataID(t *testing.T) {
 			},
 		},
 	}
+	collection := mongo.ConnectDB("mongodb://localhost:27017")
+
+	str := mongo.JokesStorage{
+		Collection: collection,
+	}
+
+	client := api.JokesHandler{
+		Storage: str,
+	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 
-			collection := config.ConnectDB("mongodb://localhost:27017")
-
-			_, err := InsertData(collection, tc.insert)
+			err := client.Storage.InsertJoke(tc.insert)
 			assert.Nil(t, err)
 
-			_, err = InsertData(collection, tc.insert)
+			err = client.Storage.InsertJoke(tc.insert)
 			assert.Error(t, err)
 
 		})

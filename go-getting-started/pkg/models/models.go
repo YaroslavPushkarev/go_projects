@@ -6,3 +6,8 @@ type Joke struct {
 	Score int    `json:"score" bson:"score"`
 	Title string `json:"title" bson:"title"`
 }
+
+type Pagination struct {
+	Skip  int
+	Limit int
+}
